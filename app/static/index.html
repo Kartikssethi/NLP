@@ -12,6 +12,8 @@
   :root {
     --bg: #f2ede0;
     --panel: #faf7ee;
+    --bubble-user: #1c3324;
+    --bubble-assistant: #ffffff;
     --ink: #1a2a1d;
     --ink-soft: #5b6b56;
     --accent: #1c3324;
@@ -24,175 +26,204 @@
     --radius: 16px;
   }
   * { box-sizing: border-box; }
-  body {
+  html, body {
+    height: 100%; margin: 0;
     font-family: "Inter", -apple-system, BlinkMacSystemFont, sans-serif;
-    background: var(--bg);
-    color: var(--ink);
-    margin: 0;
-    padding: 56px 16px;
+    background: var(--bg); color: var(--ink);
   }
-  .card {
-    max-width: 780px;
-    margin: 0 auto;
-    background: var(--panel);
-    border: 1px solid var(--border);
-    border-radius: var(--radius);
-    padding: 40px 44px;
-    box-shadow: 0 1px 2px rgba(26,42,29,0.04), 0 16px 40px rgba(26,42,29,0.07);
+  .app {
+    display: flex; flex-direction: column; height: 100vh; max-width: 820px; margin: 0 auto;
   }
-  .eyebrow {
-    font-size: 0.72rem; letter-spacing: 0.14em; text-transform: uppercase;
-    color: var(--gold); font-weight: 600; margin-bottom: 10px;
+
+  /* ---- header ---- */
+  header {
+    display: flex; align-items: baseline; justify-content: space-between;
+    padding: 18px 24px 14px; flex-shrink: 0;
   }
-  h1 {
-    font-family: "Playfair Display", serif; font-weight: 700;
-    font-size: 2.4rem; line-height: 1.15; margin: 0 0 10px; letter-spacing: -0.01em;
+  .brand { display: flex; align-items: baseline; gap: 10px; }
+  .brand .eyebrow {
+    font-size: 0.68rem; letter-spacing: 0.14em; text-transform: uppercase;
+    color: var(--gold); font-weight: 600;
   }
-  .subtitle {
+  .brand h1 { font-family: "Playfair Display", serif; font-weight: 700; font-size: 1.3rem; margin: 0; }
+  #newChatBtn {
+    font-size: 0.8rem; font-weight: 500; color: var(--ink-soft);
+    background: none; border: 1px solid var(--border); padding: 7px 13px;
+    border-radius: 9px; cursor: pointer; font-family: "Inter", sans-serif;
+  }
+  #newChatBtn:hover { background: #ece5d2; color: var(--ink); }
+
+  /* ---- scrollable chat ---- */
+  #chat { flex: 1; overflow-y: auto; padding: 8px 24px 16px; }
+
+  .welcome { padding: 40px 12px 24px; }
+  .welcome .subtitle {
     font-family: "Playfair Display", serif; font-style: italic; font-weight: 500;
-    color: var(--ink-soft); font-size: 1.15rem; margin: 0 0 26px;
+    color: var(--ink-soft); font-size: 1.25rem; margin: 0 0 22px;
   }
-  #examples { color: var(--ink-soft); font-size: 0.82rem; margin-bottom: 22px; line-height: 1.7; }
+  #examples { color: var(--ink-soft); font-size: 0.83rem; line-height: 1.8; }
   #examples code {
-    background: var(--gold-soft); color: #5a4322; padding: 2px 8px; border-radius: 6px; cursor: pointer;
-    font-size: 0.78rem; font-family: "Inter", sans-serif; transition: background 0.15s;
+    background: var(--gold-soft); color: #5a4322; padding: 3px 9px; border-radius: 7px; cursor: pointer;
+    font-size: 0.79rem; font-family: "Inter", sans-serif; transition: background 0.15s;
   }
   #examples code:hover { background: #d8c393; }
 
-  #historyBar {
-    font-size: 0.8rem; color: var(--ink-soft); margin-bottom: 14px;
-    display: flex; align-items: baseline; justify-content: space-between; gap: 12px;
+  .msg { display: flex; margin-bottom: 16px; }
+  .msg.user { justify-content: flex-end; }
+  .msg.assistant { justify-content: flex-start; }
+  .bubble { max-width: 88%; border-radius: 16px; padding: 12px 16px; }
+  .msg.user .bubble {
+    background: var(--bubble-user); color: #f4efe1; border-bottom-right-radius: 4px;
+    font-size: 0.96rem;
   }
-  #historyList { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-  #historyBar a { color: var(--gold); text-decoration: none; flex-shrink: 0; }
-  #historyBar a:hover { text-decoration: underline; }
-
-  #queryForm { display: flex; gap: 8px; }
-  #text {
-    flex: 1; padding: 13px 16px; font-size: 1rem; font-family: "Inter", sans-serif;
-    background: #fff; color: var(--ink);
-    border: 1px solid var(--border); border-radius: 11px;
-    outline: none; transition: border-color 0.15s, box-shadow 0.15s;
+  .msg.assistant .bubble {
+    background: var(--bubble-assistant); border: 1px solid var(--border);
+    border-bottom-left-radius: 4px; width: 100%;
+    box-shadow: 0 1px 2px rgba(26,42,29,0.03);
   }
-  #text:focus { border-color: var(--gold); box-shadow: 0 0 0 3px rgba(182,136,76,0.18); }
 
-  button {
-    padding: 13px 22px; font-size: 0.95rem; font-weight: 600; font-family: "Inter", sans-serif;
-    border: none; border-radius: 11px; cursor: pointer;
-    background: var(--accent); color: var(--panel); transition: background 0.15s;
+  .thinking { display: flex; gap: 4px; padding: 4px 2px; }
+  .thinking span {
+    width: 6px; height: 6px; border-radius: 50%; background: var(--ink-soft);
+    animation: bounce 1.2s infinite;
   }
-  button:hover { background: var(--accent-hover); }
-  button.secondary { background: #ece5d2; color: var(--ink); }
-  button.secondary:hover { background: #e2d9c0; }
-  button.danger { background: var(--danger); }
-  button.danger:hover { background: #7f2f24; }
+  .thinking span:nth-child(2) { animation-delay: 0.15s; }
+  .thinking span:nth-child(3) { animation-delay: 0.3s; }
+  @keyframes bounce { 0%, 60%, 100% { transform: translateY(0); opacity: 0.4; } 30% { transform: translateY(-4px); opacity: 1; } }
 
-  #micBtn {
-    background: #ece5d2; color: var(--ink); border: 1px solid var(--border);
-    padding: 13px 17px; display: flex; align-items: center; justify-content: center;
-    flex-shrink: 0;
+  .sql {
+    background: #16241a; color: #cfe0c9; padding: 11px 14px;
+    border-radius: 10px; font-family: ui-monospace, "SF Mono", Menlo, monospace;
+    font-size: 0.78rem; overflow-x: auto; white-space: pre-wrap; margin-bottom: 10px;
   }
-  #micBtn:hover { background: #e2d9c0; }
-  #micBtn.recording { background: var(--danger); color: #fff; border-color: var(--danger); }
-  #micBtn.recording:hover { background: #7f2f24; }
+  .status-line { color: var(--ink-soft); font-size: 0.8rem; margin-bottom: 8px; }
+  .scalar { font-family: "Playfair Display", serif; font-size: 1.6rem; font-weight: 600; padding: 6px 0; }
+  .error-box { color: var(--danger); background: var(--danger-soft); padding: 11px 14px; border-radius: 10px; }
 
+  .confirm-box {
+    display: flex; align-items: center; gap: 10px; flex-wrap: wrap;
+    background: #f6ecd6; border: 1px solid var(--gold-soft); padding: 11px 14px;
+    border-radius: 10px; margin-top: 10px; font-size: 0.88rem;
+  }
+
+  .table-scroll { max-width: 100%; overflow-x: auto; }
+  table { border-collapse: collapse; width: 100%; font-size: 0.81rem; }
+  th, td { border: 1px solid var(--border); padding: 8px 10px; text-align: left; white-space: nowrap; }
+  th { background: #efe9d8; font-weight: 600; font-family: "Inter", sans-serif; }
+  tr:nth-child(even) td { background: #f8f4e8; }
+
+  /* ---- composer ---- */
+  .composer-wrap { flex-shrink: 0; padding: 12px 24px 20px; background: var(--bg); }
   #recordingBar {
-    display: none; flex-direction: column; gap: 8px;
-    margin-top: 14px; padding: 14px 16px;
+    display: none; flex-direction: column; gap: 6px;
+    margin-bottom: 10px; padding: 12px 15px;
     background: var(--danger-soft); border: 1px solid #e6bdb1; border-radius: 12px;
   }
   #recordingBar.active { display: flex; }
-  .recordingHead { display: flex; align-items: center; gap: 10px; font-size: 0.85rem; color: var(--danger); }
-  .dot {
-    width: 8px; height: 8px; border-radius: 50%; background: var(--danger);
-    animation: pulse 1s infinite; flex-shrink: 0;
-  }
+  .recordingHead { display: flex; align-items: center; gap: 10px; font-size: 0.83rem; color: var(--danger); }
+  .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--danger); animation: pulse 1s infinite; flex-shrink: 0; }
   @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.3; } }
   #timer { font-variant-numeric: tabular-nums; font-weight: 700; }
   #liveCaption {
-    font-family: "Playfair Display", serif; font-style: italic; font-size: 1.05rem;
-    color: #6b2f24; min-height: 1.4em;
+    font-family: "Playfair Display", serif; font-style: italic; font-size: 1rem;
+    color: #6b2f24; min-height: 1.3em;
   }
 
-  #status { color: var(--ink-soft); font-size: 0.85rem; margin-top: 14px; min-height: 1.2em; }
-
-  #confirmBar {
-    display: none; align-items: center; gap: 10px; flex-wrap: wrap;
-    background: #f6ecd6; border: 1px solid var(--gold-soft); padding: 13px 16px;
-    border-radius: 12px; margin-top: 14px; font-size: 0.9rem;
+  #queryForm {
+    display: flex; gap: 8px; background: #fff; border: 1px solid var(--border);
+    border-radius: 16px; padding: 6px 6px 6px 16px; box-shadow: 0 1px 2px rgba(26,42,29,0.04), 0 8px 20px rgba(26,42,29,0.05);
   }
-
-  #sql {
-    display: none; background: #16241a; color: #cfe0c9; padding: 13px 16px;
-    border-radius: 12px; font-family: ui-monospace, "SF Mono", Menlo, monospace;
-    font-size: 0.8rem; overflow-x: auto; white-space: pre-wrap; margin-top: 18px;
+  #text {
+    flex: 1; border: none; outline: none; font-size: 1rem; font-family: "Inter", sans-serif;
+    background: transparent; color: var(--ink); padding: 10px 0;
   }
+  #text::placeholder { color: #9aa596; }
 
-  #results { margin-top: 18px; }
-  table { border-collapse: collapse; width: 100%; font-size: 0.83rem; }
-  th, td { border: 1px solid var(--border); padding: 9px 11px; text-align: left; }
-  th { background: #efe9d8; font-weight: 600; font-family: "Inter", sans-serif; }
-  tr:nth-child(even) td { background: #f8f4e8; }
-  #scalar { font-family: "Playfair Display", serif; font-size: 1.8rem; font-weight: 600; padding: 18px 0; }
-  #error { color: var(--danger); background: var(--danger-soft); padding: 13px 16px; border-radius: 12px; }
+  button {
+    border: none; border-radius: 11px; cursor: pointer;
+    font-weight: 600; font-family: "Inter", sans-serif; transition: background 0.15s;
+  }
+  #sendBtn {
+    padding: 11px 20px; font-size: 0.95rem; background: var(--accent); color: var(--panel); flex-shrink: 0;
+  }
+  #sendBtn:hover { background: var(--accent-hover); }
+  .secondary { padding: 9px 16px; font-size: 0.85rem; background: #ece5d2; color: var(--ink); }
+  .secondary:hover { background: #e2d9c0; }
+  .danger { padding: 9px 16px; font-size: 0.85rem; background: var(--danger); color: #fff; }
+  .danger:hover { background: #7f2f24; }
+
+  #micBtn {
+    background: transparent; color: var(--ink-soft); border: none;
+    padding: 10px 12px; display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+  }
+  #micBtn:hover { background: #ece5d2; border-radius: 10px; }
+  #micBtn.recording { color: var(--danger); }
+
+  @media (max-width: 480px) {
+    header { padding: 14px 14px 10px; }
+    .brand h1 { font-size: 1.05rem; }
+    #newChatBtn { font-size: 0.75rem; padding: 6px 10px; }
+    #chat { padding: 4px 14px 12px; }
+    .composer-wrap { padding: 10px 14px 16px; }
+    #queryForm { padding: 4px 4px 4px 12px; }
+    #sendBtn { padding: 10px 14px; }
+    .bubble { max-width: 96%; }
+  }
 </style>
 </head>
 <body>
-<div class="card">
-  <div class="eyebrow">Sales data · ask anything</div>
-  <h1>Voice-to-SQL</h1>
-  <p class="subtitle">Type it, or just say it — I'll turn it into a query.</p>
-  <div id="examples">
-    Try: <code>top 5 brands by quantity sold</code> ·
-    <code>how many laptops in west region</code> ·
-    <code>average price of samsung phones</code> ·
-    <code>delete 2 laptops in central region</code>
-  </div>
-  <div id="historyBar" style="display:none">
-    <span id="historyList"></span>
-    <a href="#" id="clearHistory">Start over</a>
-  </div>
-  <form id="queryForm">
-    <input id="text" type="text" placeholder="Ask something about the sales data..." autocomplete="off" autofocus />
-    <button type="button" id="micBtn" title="Record a question">
-      <svg id="micIcon" width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M12 15a3 3 0 0 0 3-3V6a3 3 0 0 0-6 0v6a3 3 0 0 0 3 3z"/><path d="M19 11a1 1 0 0 0-2 0 5 5 0 0 1-10 0 1 1 0 0 0-2 0 7 7 0 0 0 6 6.92V20H9a1 1 0 0 0 0 2h6a1 1 0 0 0 0-2h-2v-2.08A7 7 0 0 0 19 11z"/></svg>
-      <svg id="stopIcon" width="18" height="18" viewBox="0 0 24 24" fill="currentColor" style="display:none"><rect x="6" y="6" width="12" height="12" rx="2"/></svg>
-    </button>
-    <button type="submit">Ask</button>
-  </form>
-
-  <div id="recordingBar">
-    <div class="recordingHead">
-      <div class="dot"></div>
-      <span>Listening — <span id="timer">0:30</span></span>
+<div class="app">
+  <header>
+    <div class="brand">
+      <span class="eyebrow">Sales data</span>
+      <h1>Voice-to-SQL</h1>
     </div>
-    <div id="liveCaption">Say something...</div>
+    <button type="button" id="newChatBtn">New chat</button>
+  </header>
+
+  <div id="chat">
+    <div class="welcome" id="welcome">
+      <p class="subtitle">Type it, or just say it — I'll turn it into a query.</p>
+      <div id="examples">
+        Try: <code>top 5 brands by quantity sold</code> ·
+        <code>how many laptops in west region</code> ·
+        <code>average price of samsung phones</code> ·
+        <code>delete 2 laptops in central region</code>
+      </div>
+    </div>
+    <div id="messages"></div>
   </div>
 
-  <div id="status"></div>
-  <div id="confirmBar">
-    <span>This will modify the database. Run it?</span>
-    <button id="confirmBtn">Yes, run it</button>
-    <button id="cancelBtn" class="secondary">Cancel</button>
+  <div class="composer-wrap">
+    <div id="recordingBar">
+      <div class="recordingHead">
+        <div class="dot"></div>
+        <span>Listening — <span id="timer">0:30</span></span>
+      </div>
+      <div id="liveCaption">Say something...</div>
+    </div>
+
+    <form id="queryForm">
+      <input id="text" type="text" placeholder="Ask something about the sales data..." autocomplete="off" autofocus />
+      <button type="button" id="micBtn" title="Record a question">
+        <svg id="micIcon" width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M12 15a3 3 0 0 0 3-3V6a3 3 0 0 0-6 0v6a3 3 0 0 0 3 3z"/><path d="M19 11a1 1 0 0 0-2 0 5 5 0 0 1-10 0 1 1 0 0 0-2 0 7 7 0 0 0 6 6.92V20H9a1 1 0 0 0 0 2h6a1 1 0 0 0 0-2h-2v-2.08A7 7 0 0 0 19 11z"/></svg>
+        <svg id="stopIcon" width="20" height="20" viewBox="0 0 24 24" fill="currentColor" style="display:none"><rect x="6" y="6" width="12" height="12" rx="2"/></svg>
+      </button>
+      <button type="submit" id="sendBtn">Ask</button>
+    </form>
   </div>
-  <div id="sql"></div>
-  <div id="results"></div>
 </div>
 
 <script>
 mermaid.initialize({ startOnLoad: false });
 
+const chatEl = document.getElementById('chat');
+const welcomeEl = document.getElementById('welcome');
+const messagesEl = document.getElementById('messages');
+const newChatBtn = document.getElementById('newChatBtn');
+
 const form = document.getElementById('queryForm');
 const textInput = document.getElementById('text');
-const statusEl = document.getElementById('status');
-const historyBar = document.getElementById('historyBar');
-const historyListEl = document.getElementById('historyList');
-const clearHistoryLink = document.getElementById('clearHistory');
-const sqlEl = document.getElementById('sql');
-const resultsEl = document.getElementById('results');
-const confirmBar = document.getElementById('confirmBar');
-const confirmBtn = document.getElementById('confirmBtn');
-const cancelBtn = document.getElementById('cancelBtn');
 const micBtn = document.getElementById('micBtn');
 const micIcon = document.getElementById('micIcon');
 const stopIcon = document.getElementById('stopIcon');
@@ -203,20 +234,16 @@ const liveCaptionEl = document.getElementById('liveCaption');
 const RECORD_SECONDS = 30;
 const SpeechRecognitionCtor = window.SpeechRecognition || window.webkitSpeechRecognition;
 
-let pendingText = null;
 let countdownInterval = null;
 let autoStopTimeout = null;
 
 // Conversation memory for this page session — lets a follow-up like "now
 // break that down by region" resolve "that" against what was already asked.
 // Sent to the server with every /query call; only the Ollama fallback uses
-// it (see nl2sql.py). Cleared on page reload or via the "Start over" link.
+// it (see nl2sql.py). Cleared on page reload or via "New chat".
 let conversationHistory = [];
 
 // --- Speech-to-text primary path: the browser's own free recognizer ------
-// (Chrome/Edge). Gives a live transcript as you talk, with no server round
-// trip. Only the browsers that don't support it fall back to recording
-// audio and transcribing it server-side with faster-whisper.
 let recognition = null;
 let finalTranscript = '';
 let shouldContinueListening = false;
@@ -231,27 +258,16 @@ document.querySelectorAll('#examples code').forEach(el => {
 
 form.addEventListener('submit', (e) => {
   e.preventDefault();
-  runQuery(textInput.value, false);
+  const text = textInput.value;
+  textInput.value = '';
+  sendMessage(text, false);
 });
 
-confirmBtn.addEventListener('click', () => { if (pendingText) runQuery(pendingText, true); });
-cancelBtn.addEventListener('click', () => { confirmBar.style.display = 'none'; pendingText = null; statusEl.textContent = 'Cancelled.'; });
-
-clearHistoryLink.addEventListener('click', (e) => {
-  e.preventDefault();
+newChatBtn.addEventListener('click', () => {
   conversationHistory = [];
-  renderHistory();
-  statusEl.textContent = 'Conversation cleared — starting fresh.';
+  messagesEl.innerHTML = '';
+  welcomeEl.style.display = '';
 });
-
-function renderHistory() {
-  if (!conversationHistory.length) {
-    historyBar.style.display = 'none';
-    return;
-  }
-  historyBar.style.display = 'flex';
-  historyListEl.textContent = 'Continuing from: ' + conversationHistory.map(h => h.text).join(' → ');
-}
 
 micBtn.addEventListener('click', () => {
   const isRecording = (recognition && shouldContinueListening) || (mediaRecorder && mediaRecorder.state === 'recording');
@@ -264,16 +280,44 @@ micBtn.addEventListener('click', () => {
   }
 });
 
+// --- Chat rendering --------------------------------------------------------
+
+function scrollToBottom() {
+  chatEl.scrollTop = chatEl.scrollHeight;
+}
+
+function addUserMessage(text) {
+  welcomeEl.style.display = 'none';
+  const msg = document.createElement('div');
+  msg.className = 'msg user';
+  const bubble = document.createElement('div');
+  bubble.className = 'bubble';
+  bubble.textContent = text;
+  msg.appendChild(bubble);
+  messagesEl.appendChild(msg);
+  scrollToBottom();
+}
+
+function addAssistantMessage() {
+  const msg = document.createElement('div');
+  msg.className = 'msg assistant';
+  const bubble = document.createElement('div');
+  bubble.className = 'bubble';
+  bubble.innerHTML = '<div class="thinking"><span></span><span></span><span></span></div>';
+  msg.appendChild(bubble);
+  messagesEl.appendChild(msg);
+  scrollToBottom();
+  return bubble;
+}
+
+// --- Recording UI ------------------------------------------------------
+
 function beginRecordingUI() {
   micBtn.classList.add('recording');
   micIcon.style.display = 'none';
   stopIcon.style.display = '';
   recordingBar.classList.add('active');
   liveCaptionEl.textContent = 'Say something...';
-  statusEl.textContent = '';
-  resultsEl.innerHTML = '';
-  sqlEl.style.display = 'none';
-  confirmBar.style.display = 'none';
   startCountdown();
 }
 
@@ -299,7 +343,7 @@ function startCountdown() {
 
 function stopRecording() {
   shouldContinueListening = false;
-  if (recognition) recognition.stop(); // -> onend finalizes and runs the query
+  if (recognition) recognition.stop(); // -> onend finalizes and sends the message
   if (mediaRecorder && mediaRecorder.state === 'recording') mediaRecorder.stop();
 }
 
@@ -307,8 +351,7 @@ function stopRecording() {
 
 function startSpeechRecognition() {
   finalTranscript = '';
-  textInput.value = ''; // clear stale text from a previous query so a
-                          // failed/empty recording can't silently re-submit it
+  textInput.value = ''; // clear stale text so a failed/empty recording can't resend old text
   shouldContinueListening = true;
   recognition = new SpeechRecognitionCtor();
   recognition.continuous = true;
@@ -334,7 +377,8 @@ function startSpeechRecognition() {
       fatalMicError = true;
       shouldContinueListening = false;
       endRecordingUI();
-      statusEl.textContent = "Couldn't access the microphone: permission denied.";
+      liveCaptionEl.textContent = '';
+      addAssistantMessage().innerHTML = '<div class="error-box">Couldn\'t access the microphone: permission denied.</div>';
     }
     // other errors (e.g. transient 'no-speech') are non-fatal; onend handles restart/finalize
   };
@@ -344,18 +388,18 @@ function startSpeechRecognition() {
       try { recognition.start(); } catch { /* already starting */ }
       return;
     }
-    if (fatalMicError) return; // onerror already reported this; don't clobber its message
+    if (fatalMicError) return; // onerror already reported this
     endRecordingUI();
     const text = finalTranscript.trim() || textInput.value.trim();
-    if (text) runQuery(text, false);
-    else statusEl.textContent = "Didn't catch any speech, try again.";
+    textInput.value = '';
+    if (text) sendMessage(text, false);
   };
 
   try {
     recognition.start();
     beginRecordingUI();
   } catch {
-    statusEl.textContent = 'Could not start the microphone.';
+    addAssistantMessage().innerHTML = '<div class="error-box">Could not start the microphone.</div>';
   }
 }
 
@@ -366,7 +410,7 @@ async function startMediaRecorderFallback() {
   try {
     stream = await navigator.mediaDevices.getUserMedia({ audio: true });
   } catch (err) {
-    statusEl.textContent = `Couldn't access the microphone: ${err.message || err}`;
+    addAssistantMessage().innerHTML = `<div class="error-box">Couldn't access the microphone: ${err.message || err}</div>`;
     return;
   }
 
@@ -384,7 +428,8 @@ async function startMediaRecorderFallback() {
 }
 
 async function sendRecordingForTranscription(blob) {
-  statusEl.textContent = 'Transcribing...';
+  const bubble = addAssistantMessage();
+  bubble.innerHTML = '<div class="status-line">Transcribing...</div>';
   const form = new FormData();
   const ext = (blob.type.split('/')[1] || 'webm').split(';')[0];
   form.append('file', blob, `recording.${ext}`);
@@ -394,97 +439,126 @@ async function sendRecordingForTranscription(blob) {
     resp = await fetch('/transcribe', { method: 'POST', body: form });
     data = await resp.json();
   } catch (err) {
-    statusEl.textContent = `Transcription request failed: ${err}`;
+    bubble.innerHTML = `<div class="error-box">Transcription request failed: ${err}</div>`;
     return;
   }
   if (!resp.ok) {
-    statusEl.textContent = (data && data.detail) || 'Transcription failed.';
+    bubble.innerHTML = `<div class="error-box">${(data && data.detail) || 'Transcription failed.'}</div>`;
     return;
   }
 
-  textInput.value = data.text;
-  runQuery(data.text, false);
+  bubble.parentElement.remove(); // was just a "transcribing..." placeholder — the real turn starts now
+  sendMessage(data.text, false);
 }
 
 // --- Query execution -------------------------------------------------------
 
-async function runQuery(text, confirm) {
+async function sendMessage(text, confirm, existingBubble, forUserText) {
   if (!text.trim()) return;
-  statusEl.textContent = 'Running...';
-  confirmBar.style.display = 'none';
-  resultsEl.innerHTML = '';
-  sqlEl.style.display = 'none';
+
+  let bubble;
+  if (existingBubble) {
+    bubble = existingBubble;
+    bubble.innerHTML = '<div class="thinking"><span></span><span></span><span></span></div>';
+  } else {
+    addUserMessage(text);
+    bubble = addAssistantMessage();
+  }
 
   let resp, data;
   try {
     resp = await fetch('/query', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ text, confirm, history: conversationHistory }),
+      body: JSON.stringify({ text: forUserText || text, confirm, history: conversationHistory }),
     });
     data = await resp.json();
   } catch (err) {
-    statusEl.textContent = '';
-    resultsEl.innerHTML = `<div id="error">Request failed: ${err}</div>`;
+    bubble.innerHTML = `<div class="error-box">Request failed: ${err}</div>`;
     return;
   }
 
   if (!resp.ok) {
-    statusEl.textContent = '';
-    resultsEl.innerHTML = `<div id="error">${(data && data.detail) || resp.statusText}</div>`;
+    bubble.innerHTML = `<div class="error-box">${(data && data.detail) || resp.statusText}</div>`;
     return;
   }
-
-  sqlEl.style.display = 'block';
-  sqlEl.textContent = `${data.source}: ${data.sql}`;
 
   if (data.requires_confirmation) {
-    pendingText = text;
-    confirmBar.style.display = 'flex';
-    statusEl.textContent = `Preview — ${data.rows.length} row(s) would be affected.`;
-    renderTable(data.columns, data.rows);
+    renderConfirm(bubble, data, forUserText || text);
     return;
   }
 
-  pendingText = null;
-  statusEl.textContent = `${data.rows.length} row(s)`;
-  renderResult(data);
+  renderResult(bubble, data);
 
-  conversationHistory.push({ text, sql: data.sql });
+  conversationHistory.push({ text: forUserText || text, sql: data.sql });
   conversationHistory = conversationHistory.slice(-5);
-  renderHistory();
 }
 
-function renderResult(data) {
-  resultsEl.innerHTML = '';
+function renderConfirm(bubble, data, originalText) {
+  bubble.innerHTML = '';
+  bubble.appendChild(sqlBlock(data));
+  bubble.appendChild(tableBlock(data.columns, data.rows));
+
+  const box = document.createElement('div');
+  box.className = 'confirm-box';
+  const label = document.createElement('span');
+  label.textContent = `This will affect ${data.rows.length} row(s). Run it?`;
+  const yesBtn = document.createElement('button');
+  yesBtn.textContent = 'Yes, run it';
+  yesBtn.addEventListener('click', () => sendMessage(originalText, true, bubble, originalText));
+  const noBtn = document.createElement('button');
+  noBtn.className = 'secondary';
+  noBtn.textContent = 'Cancel';
+  noBtn.addEventListener('click', () => {
+    box.remove();
+    const note = document.createElement('div');
+    note.className = 'status-line';
+    note.textContent = 'Cancelled.';
+    bubble.appendChild(note);
+  });
+  box.append(label, yesBtn, noBtn);
+  bubble.appendChild(box);
+  scrollToBottom();
+}
+
+function renderResult(bubble, data) {
+  bubble.innerHTML = '';
+  bubble.appendChild(sqlBlock(data));
+
   if (data.rows.length === 1 && data.columns.length === 1) {
     const div = document.createElement('div');
-    div.id = 'scalar';
+    div.className = 'scalar';
     div.textContent = `${data.columns[0]}: ${data.rows[0][0]}`;
-    resultsEl.appendChild(div);
+    bubble.appendChild(div);
+    scrollToBottom();
     return;
   }
+
   if (data.is_mermaid) {
-    renderChart(data.chart);
+    const div = document.createElement('div');
+    div.className = 'mermaid';
+    div.textContent = data.chart;
+    bubble.appendChild(div);
+    mermaid.run({ nodes: [div] }).then(scrollToBottom);
   }
-  renderTable(data.columns, data.rows);
+  bubble.appendChild(tableBlock(data.columns, data.rows));
+  scrollToBottom();
 }
 
-async function renderChart(mermaidSrc) {
+function sqlBlock(data) {
   const div = document.createElement('div');
-  div.className = 'mermaid';
-  div.textContent = mermaidSrc;
-  resultsEl.appendChild(div);
-  await mermaid.run({ nodes: [div] });
+  div.className = 'sql';
+  div.textContent = `${data.source}: ${data.sql}`;
+  return div;
 }
 
-function renderTable(columns, rows) {
+function tableBlock(columns, rows) {
+  const wrap = document.createElement('div');
   if (!rows.length) {
-    const p = document.createElement('p');
-    p.textContent = 'No rows.';
-    resultsEl.appendChild(p);
-    return;
+    wrap.textContent = 'No rows.';
+    return wrap;
   }
+  wrap.className = 'table-scroll';
   const table = document.createElement('table');
   const thead = document.createElement('tr');
   columns.forEach(c => { const th = document.createElement('th'); th.textContent = c; thead.appendChild(th); });
@@ -494,7 +568,8 @@ function renderTable(columns, rows) {
     row.forEach(v => { const td = document.createElement('td'); td.textContent = v === null ? '' : v; tr.appendChild(td); });
     table.appendChild(tr);
   });
-  resultsEl.appendChild(table);
+  wrap.appendChild(table);
+  return wrap;
 }
 </script>
 </body>
