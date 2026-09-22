@@ -15,8 +15,8 @@ from fastapi import FastAPI, HTTPException
 from fastapi.responses import HTMLResponse
 from pydantic import BaseModel
 
-from app.db import execute_sql, get_schema, seed_sample_db
-from app.nl2sql import parse
+from app.db import execute_sql, get_schema, load_sales_data
+from app.nl2sql import OllamaUnavailable, parse
 from app.viz import build_chart, wrap_html
 
 app = FastAPI(title="Voice-to-SQL")
@@ -27,6 +27,7 @@ _last_chart: dict[str, str] = {"mermaid": "", "is_mermaid": False}
 
 class QueryIn(BaseModel):
     text: str
+    confirm: bool = False  # must be true to actually run a DELETE
 
 
 class QueryOut(BaseModel):
@@ -37,11 +38,12 @@ class QueryOut(BaseModel):
     rows: list[list]
     chart: str
     is_mermaid: bool
+    requires_confirmation: bool = False
 
 
 @app.on_event("startup")
 def _startup() -> None:
-    seed_sample_db()
+    load_sales_data()
 
 
 @app.get("/health")
@@ -54,8 +56,31 @@ def schema() -> dict:
     return {"schema": get_schema()}
 
 
-def _run_query(text: str) -> QueryOut:
-    parsed = parse(text)
+def _run_query(text: str, confirm: bool) -> QueryOut:
+    try:
+        parsed = parse(text)
+    except OllamaUnavailable as exc:
+        raise HTTPException(status_code=502, detail=str(exc))
+
+    if parsed.is_write and not confirm:
+        # Don't execute the write yet — show what it would affect instead,
+        # so the caller can resubmit with confirm=true once they've seen it.
+        try:
+            columns, rows = execute_sql(parsed.preview_sql)
+        except Exception as exc:  # noqa: BLE001
+            raise HTTPException(status_code=400, detail=f"SQL error: {exc}\nSQL was: {parsed.preview_sql}")
+        chart = build_chart(columns, rows)
+        return QueryOut(
+            text=text,
+            sql=parsed.sql,
+            source=parsed.source,
+            columns=columns,
+            rows=[list(r) for r in rows],
+            chart=chart,
+            is_mermaid=False,
+            requires_confirmation=True,
+        )
+
     try:
         columns, rows = execute_sql(parsed.sql)
     except Exception as exc:  # noqa: BLE001 - surface the DB error to the caller
@@ -79,7 +104,7 @@ def _run_query(text: str) -> QueryOut:
 
 @app.post("/query", response_model=QueryOut)
 def query(payload: QueryIn) -> QueryOut:
-    return _run_query(payload.text)
+    return _run_query(payload.text, payload.confirm)
 
 
 @app.post("/voice-query", response_model=QueryOut)
@@ -89,7 +114,7 @@ def voice_query() -> QueryOut:
     text = record_and_transcribe()
     if not text:
         raise HTTPException(status_code=400, detail="Didn't catch any speech.")
-    return _run_query(text)
+    return _run_query(text, confirm=False)
 
 
 @app.get("/chart", response_class=HTMLResponse)

@@ -1,9 +1,10 @@
-"""SQLite access layer: connect, inspect schema, run SQL, seed sample data."""
+"""SQLite access layer: connect, inspect schema, run SQL, load the dataset."""
+import csv
 import sqlite3
 from pathlib import Path
 from typing import Any
 
-from app.config import DB_PATH
+from app.config import DB_PATH, SALES_CSV_PATH
 
 
 def get_connection() -> sqlite3.Connection:
@@ -62,45 +63,99 @@ def execute_sql(sql: str) -> tuple[list[str], list[tuple[Any, ...]]]:
         conn.close()
 
 
-def seed_sample_db() -> None:
-    """Create a small 'people' table with sample data, if it doesn't exist yet.
+_SALES_COLUMNS = [
+    "product",
+    "brand",
+    "product_code",
+    "product_spec",
+    "price",
+    "inward_date",
+    "dispatch_date",
+    "quantity_sold",
+    "customer_name",
+    "customer_location",
+    "region",
+    "core_spec",
+    "processor_spec",
+    "ram",
+    "rom",
+    "ssd",
+]
 
-    This exists so you have something to talk to immediately. Swap it out
-    for your real dataset whenever it's ready (see README).
+
+def _clean_row(row: dict) -> tuple:
+    def s(key: str) -> str | None:
+        val = (row.get(key) or "").strip()
+        return val or None
+
+    def n(key: str) -> int | None:
+        val = (row.get(key) or "").strip()
+        try:
+            return int(float(val)) if val else None
+        except ValueError:
+            return None
+
+    return (
+        s("Product"),
+        s("Brand"),
+        s("Product Code"),
+        s("Product Specification"),
+        n("Price"),
+        s("Inward Date"),
+        s("Dispatch Date"),
+        n("Quantity Sold"),
+        s("Customer Name"),
+        s("Customer Location"),
+        s("Region"),
+        s("Core Specification"),
+        s("Processor Specification"),
+        s("RAM"),
+        s("ROM"),
+        s("SSD"),
+    )
+
+
+def load_sales_data() -> None:
+    """Create the `sales` table and load it from SALES_CSV_PATH, if empty.
+
+    Idempotent: does nothing if the table already has rows, so restarts
+    don't re-import 50k rows every time.
     """
     conn = get_connection()
     try:
+        numeric_cols = {"price": "INTEGER", "quantity_sold": "INTEGER"}
+        cols_sql = ",\n                ".join(
+            f"{c} {numeric_cols.get(c, 'TEXT')}" for c in _SALES_COLUMNS
+        )
         conn.execute(
-            """
-            CREATE TABLE IF NOT EXISTS people (
+            f"""
+            CREATE TABLE IF NOT EXISTS sales (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
-                name TEXT NOT NULL,
-                age INTEGER,
-                city TEXT,
-                department TEXT
+                {cols_sql}
             )
             """
         )
-        count = conn.execute("SELECT COUNT(*) FROM people").fetchone()[0]
-        if count == 0:
-            sample = [
-                ("Aarav Sharma", 24, "Mumbai", "Engineering"),
-                ("Diya Patel", 29, "Pune", "Sales"),
-                ("Vihaan Rao", 35, "Bengaluru", "Engineering"),
-                ("Ananya Iyer", 22, "Mumbai", "Marketing"),
-                ("Kabir Singh", 31, "Delhi", "Sales"),
-                ("Ishaan Nair", 27, "Chennai", "Engineering"),
-                ("Myra Gupta", 26, "Mumbai", "Marketing"),
-                ("Reyansh Joshi", 40, "Pune", "Engineering"),
-                ("Saanvi Mehta", 33, "Delhi", "Sales"),
-                ("Arjun Kapoor", 28, "Bengaluru", "Marketing"),
-                ("Aadhya Desai", 30, "Mumbai", "Engineering"),
-                ("Vivaan Chawla", 25, "Chennai", "Sales"),
-            ]
-            conn.executemany(
-                "INSERT INTO people (name, age, city, department) VALUES (?, ?, ?, ?)",
-                sample,
-            )
-            conn.commit()
+        count = conn.execute("SELECT COUNT(*) FROM sales").fetchone()[0]
+        if count > 0:
+            return
+
+        csv_path = Path(SALES_CSV_PATH)
+        if not csv_path.exists():
+            return  # nothing to import; table stays empty
+
+        placeholders = ", ".join("?" for _ in _SALES_COLUMNS)
+        insert_sql = f"INSERT INTO sales ({', '.join(_SALES_COLUMNS)}) VALUES ({placeholders})"
+
+        with csv_path.open(newline="", encoding="utf-8") as f:
+            reader = csv.DictReader(f)
+            batch = []
+            for row in reader:
+                batch.append(_clean_row(row))
+                if len(batch) >= 2000:
+                    conn.executemany(insert_sql, batch)
+                    batch.clear()
+            if batch:
+                conn.executemany(insert_sql, batch)
+        conn.commit()
     finally:
         conn.close()

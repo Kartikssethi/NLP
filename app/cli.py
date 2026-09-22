@@ -13,15 +13,37 @@ Nothing fancy on purpose (per project scope) — just a loop:
 """
 import argparse
 
-from app.db import execute_sql, seed_sample_db
-from app.nl2sql import parse
+from app.db import execute_sql, load_sales_data
+from app.nl2sql import OllamaUnavailable, parse
 from app.viz import build_chart
 
 
 def run_once(text: str) -> None:
     print(f"\nYou said: {text!r}")
-    parsed = parse(text)
+    try:
+        parsed = parse(text)
+    except OllamaUnavailable as exc:
+        print(f"Couldn't turn that into SQL: {exc}")
+        return
     print(f"SQL ({parsed.source}): {parsed.sql}")
+
+    if parsed.is_write:
+        try:
+            preview_cols, preview_rows = execute_sql(parsed.preview_sql)
+        except Exception as exc:  # noqa: BLE001
+            print(f"SQL error: {exc}")
+            return
+        if not preview_rows:
+            print("No matching rows — nothing to do.")
+            return
+        print(f"\nThis will affect {len(preview_rows)} row(s):")
+        print(f"Columns: {preview_cols}")
+        for row in preview_rows:
+            print(row)
+        answer = input(f"\nType 'yes' to run this DELETE, anything else to cancel: ").strip().lower()
+        if answer != "yes":
+            print("Cancelled.")
+            return
 
     try:
         columns, rows = execute_sql(parsed.sql)
@@ -45,7 +67,7 @@ def main() -> None:
     ap.add_argument("--seconds", type=int, default=None, help="Override recording length")
     args = ap.parse_args()
 
-    seed_sample_db()
+    load_sales_data()
 
     if args.text:
         run_once(args.text)

@@ -1,42 +1,44 @@
 # Handoff — where things stand
 
-Written after scaffolding the project via Cowork (desktop app), for whoever
-picks this up next (you, in Claude Code, most likely). CLAUDE.md has the
-ongoing conventions; this file is a one-time checklist of what's pending.
+Previous checklist is done: dataset swapped in, DELETE safety added, voice
+and Ollama paths tested. This is what's left.
 
-## Do first
+## Verified this round
 
-- [ ] `git push origin main` — there's a local commit (`5344cd5`,
-      "Scaffold voice-to-SQL app...") that hasn't been pushed yet. The
-      Cowork session that built it couldn't push (its sandboxed shell has
-      no GitHub credentials); a normal terminal / Claude Code should push
-      fine using your existing git auth.
+- [x] Real dataset (`mobile_sales_data.csv`, 50k rows) loaded into a `sales`
+      table, replacing the old fake `people` table.
+- [x] Rule-based parser rewritten for the real schema — filters
+      (product/brand/region/RAM/ROM), grouped/aggregate top-N, count,
+      group-by, sum/average (scalar and grouped), delete. Handles spelled-out
+      numbers ("top five") for voice input, not just digits.
+- [x] DELETE confirmation: CLI prints affected rows and requires a typed
+      `yes`; API returns a preview with `requires_confirmation: true` unless
+      `confirm: true` is sent. Tested both accept and decline paths, CLI and
+      API.
+- [x] Voice path: faster-whisper transcription tested against synthesized
+      speech (macOS `say`), fed through the full pipeline successfully.
+      **Not yet tested with a live human speaker** — that still needs you.
+- [x] Ollama fallback: tested for real against `gemma4:31b-cloud` (now the
+      default `OLLAMA_MODEL`) — both a genuinely out-of-scope query and a
+      genuinely complex in-scope one, both produced sane SQL.
 
-## Untested — verify these actually work
+## Still open
 
-- [ ] **Voice path**: `python -m app.cli` (no `--text` flag) records 30s
-      from the mic and transcribes with faster-whisper. Never tested with
-      a real mic — the sandboxed session that built this had no mic
-      access. Try it and see how transcription quality/latency feels.
-- [ ] **Ollama fallback**: `app/nl2sql.py`'s `ollama_fallback()` only
-      fires when the rule-based parser doesn't recognize the phrasing.
-      Every test utterance so far matched a rule, so this path has never
-      actually run. Needs `ollama serve` running + `ollama pull llama3.1`
-      (or change `OLLAMA_MODEL` in `app/config.py`) before it'll work.
-
-## Real decisions still needed
-
-- [ ] **The real dataset.** Everything currently runs against a seeded
-      sample `people` table (name, age, city, department) in
-      `app/db.py::seed_sample_db()`. Once the actual dataset is picked,
-      swap that out and update `TABLE` / `COLUMNS` / `KNOWN_CITIES` /
-      `KNOWN_DEPARTMENTS` in `app/nl2sql.py`, plus extend the regex
-      patterns in `rule_based_parse()` to match the phrasings you'll
-      actually demo.
-- [ ] **Safety on DELETE.** Right now a recognized "remove/delete N ..."
-      utterance runs immediately, no confirmation. Fine for testing, risky
-      for a live demo — add a print-the-SQL-and-confirm step before it
-      executes, in `app/cli.py` and/or `app/main.py`.
+- [ ] **Live mic test.** Run `python -m app.cli` (no `--text`) and actually
+      speak into it. The synthesized-speech test proves the STT pipeline
+      works; it doesn't prove mic capture, ambient noise handling, or real
+      speech patterns work.
+- [ ] **No automated tests.** Everything above was verified by hand. If this
+      needs to survive changes without manual re-checking every path,
+      consider a small `pytest` suite under `tests/` covering `nl2sql.py`'s
+      parser (it's pure functions, easy to test) at least.
+- [ ] **`nigeria_messy_sales_dataset.csv`** is a leftover from an earlier
+      dataset choice — unused by the app. Delete it or keep it, your call.
+- [ ] **Ollama cloud dependency.** `gemma4:31b-cloud` is free on this
+      account today; that could change, or the account running the demo
+      might not have it. If you want zero external dependency for the
+      fallback, pull a small local model instead and change
+      `NLP_OLLAMA_MODEL`.
 
 ## Known gotcha, already worked around — don't "fix" it back
 
@@ -49,5 +51,6 @@ bridge) — and don't switch it to WAL mode, same problem.
 
 ## Everything else
 
-See `README.md` for setup/run instructions and `CLAUDE.md` for ongoing
-conventions Claude should follow while working in this repo.
+See `README.md` for setup/run instructions, example queries, and known
+limitations, and `CLAUDE.md` for ongoing conventions Claude should follow
+while working in this repo.

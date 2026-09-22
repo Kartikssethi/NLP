@@ -7,6 +7,7 @@ import os
 
 # --- Database -----------------------------------------------------------
 DB_PATH = os.environ.get("NLP_DB_PATH", "data/nlp.db")
+SALES_CSV_PATH = os.environ.get("NLP_SALES_CSV", "mobile_sales_data.csv")
 
 # --- Speech-to-text -------------------------------------------------------
 # faster-whisper model size: tiny / base / small / medium / large-v3
@@ -17,5 +18,5 @@ SAMPLE_RATE = 16000
 
 # --- NL -> SQL fallback (Ollama) ------------------------------------------
 # Only used when the rule-based parser can't confidently handle the utterance.
-OLLAMA_MODEL = os.environ.get("NLP_OLLAMA_MODEL", "llama3.1")
+OLLAMA_MODEL = os.environ.get("NLP_OLLAMA_MODEL", "gemma4:31b-cloud")
 OLLAMA_HOST = os.environ.get("OLLAMA_HOST", "http://localhost:11434")
