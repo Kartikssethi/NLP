@@ -1,0 +1,232 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<title>Voice-to-SQL</title>
+<script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
+<style>
+  body { font-family: -apple-system, sans-serif; max-width: 900px; margin: 40px auto; padding: 0 16px; color: #1a1a1a; }
+  h1 { font-size: 1.4rem; }
+  #queryForm { display: flex; gap: 8px; margin-bottom: 8px; }
+  #text { flex: 1; padding: 10px 12px; font-size: 1rem; border: 1px solid #ccc; border-radius: 6px; }
+  button { padding: 10px 18px; font-size: 1rem; border: none; border-radius: 6px; background: #2563eb; color: white; cursor: pointer; }
+  button:hover { background: #1d4ed8; }
+  button.secondary { background: #dc2626; }
+  button.secondary:hover { background: #b91c1c; }
+  #micBtn { background: #f3f4f6; color: #1a1a1a; border: 1px solid #ccc; padding: 10px 14px; display: flex; align-items: center; justify-content: center; }
+  #micBtn:hover { background: #e5e7eb; }
+  #micBtn.recording { background: #dc2626; color: white; border-color: #dc2626; animation: pulse 1.2s infinite; }
+  @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.6; } }
+  #examples { color: #666; font-size: 0.85rem; margin-bottom: 24px; }
+  #examples code { background: #f2f2f2; padding: 1px 5px; border-radius: 3px; cursor: pointer; }
+  #sql { background: #0f172a; color: #93c5fd; padding: 10px 14px; border-radius: 6px; font-family: ui-monospace, monospace; font-size: 0.85rem; overflow-x: auto; white-space: pre-wrap; margin-bottom: 12px; }
+  #confirmBar { display: none; align-items: center; gap: 10px; background: #fef2f2; border: 1px solid #fecaca; padding: 10px 14px; border-radius: 6px; margin-bottom: 12px; }
+  table { border-collapse: collapse; width: 100%; font-size: 0.85rem; }
+  th, td { border: 1px solid #e5e7eb; padding: 6px 10px; text-align: left; }
+  th { background: #f9fafb; }
+  #scalar { font-size: 1.4rem; padding: 12px 0; }
+  #error { color: #b91c1c; background: #fef2f2; padding: 10px 14px; border-radius: 6px; }
+  #status { color: #666; font-size: 0.85rem; }
+</style>
+</head>
+<body>
+<h1>Voice-to-SQL</h1>
+<div id="examples">
+  Try: <code>top 5 brands by quantity sold</code> ·
+  <code>how many laptops in west region</code> ·
+  <code>average price of samsung phones</code> ·
+  <code>delete 2 laptops in central region</code>
+</div>
+<form id="queryForm">
+  <input id="text" type="text" placeholder="Ask something about the sales data..." autofocus />
+  <button type="button" id="micBtn" title="Record a question">
+    <svg id="micIcon" width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M12 15a3 3 0 0 0 3-3V6a3 3 0 0 0-6 0v6a3 3 0 0 0 3 3z"/><path d="M19 11a1 1 0 0 0-2 0 5 5 0 0 1-10 0 1 1 0 0 0-2 0 7 7 0 0 0 6 6.92V20H9a1 1 0 0 0 0 2h6a1 1 0 0 0 0-2h-2v-2.08A7 7 0 0 0 19 11z"/></svg>
+    <svg id="stopIcon" width="18" height="18" viewBox="0 0 24 24" fill="currentColor" style="display:none"><rect x="6" y="6" width="12" height="12" rx="2"/></svg>
+  </button>
+  <button type="submit">Ask</button>
+</form>
+<div id="status"></div>
+<div id="confirmBar">
+  <span>This will modify the database. Run it?</span>
+  <button id="confirmBtn">Yes, run it</button>
+  <button id="cancelBtn" class="secondary">Cancel</button>
+</div>
+<div id="sql" style="display:none"></div>
+<div id="results"></div>
+
+<script>
+mermaid.initialize({ startOnLoad: false });
+
+const form = document.getElementById('queryForm');
+const textInput = document.getElementById('text');
+const statusEl = document.getElementById('status');
+const sqlEl = document.getElementById('sql');
+const resultsEl = document.getElementById('results');
+const confirmBar = document.getElementById('confirmBar');
+const confirmBtn = document.getElementById('confirmBtn');
+const cancelBtn = document.getElementById('cancelBtn');
+const micBtn = document.getElementById('micBtn');
+const micIcon = document.getElementById('micIcon');
+const stopIcon = document.getElementById('stopIcon');
+
+let pendingText = null;
+let mediaRecorder = null;
+let recordedChunks = [];
+
+micBtn.addEventListener('click', () => {
+  if (mediaRecorder && mediaRecorder.state === 'recording') {
+    mediaRecorder.stop();
+  } else {
+    startRecording();
+  }
+});
+
+async function startRecording() {
+  let stream;
+  try {
+    stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+  } catch (err) {
+    statusEl.textContent = `Couldn't access the microphone: ${err.message || err}`;
+    return;
+  }
+
+  recordedChunks = [];
+  mediaRecorder = new MediaRecorder(stream);
+  mediaRecorder.ondataavailable = (e) => { if (e.data.size > 0) recordedChunks.push(e.data); };
+  mediaRecorder.onstop = async () => {
+    stream.getTracks().forEach(t => t.stop());
+    micBtn.classList.remove('recording');
+    micIcon.style.display = '';
+    stopIcon.style.display = 'none';
+    await sendRecording(new Blob(recordedChunks, { type: mediaRecorder.mimeType || 'audio/webm' }));
+  };
+
+  mediaRecorder.start();
+  micBtn.classList.add('recording');
+  micIcon.style.display = 'none';
+  stopIcon.style.display = '';
+  statusEl.textContent = 'Recording... click again to stop.';
+}
+
+async function sendRecording(blob) {
+  statusEl.textContent = 'Transcribing...';
+  const form = new FormData();
+  const ext = (blob.type.split('/')[1] || 'webm').split(';')[0];
+  form.append('file', blob, `recording.${ext}`);
+
+  let resp, data;
+  try {
+    resp = await fetch('/transcribe', { method: 'POST', body: form });
+    data = await resp.json();
+  } catch (err) {
+    statusEl.textContent = `Transcription request failed: ${err}`;
+    return;
+  }
+  if (!resp.ok) {
+    statusEl.textContent = (data && data.detail) || 'Transcription failed.';
+    return;
+  }
+
+  textInput.value = data.text;
+  runQuery(data.text, false);
+}
+
+document.querySelectorAll('#examples code').forEach(el => {
+  el.addEventListener('click', () => { textInput.value = el.textContent; form.requestSubmit(); });
+});
+
+form.addEventListener('submit', (e) => {
+  e.preventDefault();
+  runQuery(textInput.value, false);
+});
+
+confirmBtn.addEventListener('click', () => { if (pendingText) runQuery(pendingText, true); });
+cancelBtn.addEventListener('click', () => { confirmBar.style.display = 'none'; pendingText = null; statusEl.textContent = 'Cancelled.'; });
+
+async function runQuery(text, confirm) {
+  if (!text.trim()) return;
+  statusEl.textContent = 'Running...';
+  confirmBar.style.display = 'none';
+  resultsEl.innerHTML = '';
+  sqlEl.style.display = 'none';
+
+  let resp, data;
+  try {
+    resp = await fetch('/query', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ text, confirm }),
+    });
+    data = await resp.json();
+  } catch (err) {
+    statusEl.textContent = '';
+    resultsEl.innerHTML = `<div id="error">Request failed: ${err}</div>`;
+    return;
+  }
+
+  if (!resp.ok) {
+    statusEl.textContent = '';
+    resultsEl.innerHTML = `<div id="error">${(data && data.detail) || resp.statusText}</div>`;
+    return;
+  }
+
+  sqlEl.style.display = 'block';
+  sqlEl.textContent = `${data.source}: ${data.sql}`;
+
+  if (data.requires_confirmation) {
+    pendingText = text;
+    confirmBar.style.display = 'flex';
+    statusEl.textContent = `Preview — ${data.rows.length} row(s) would be affected.`;
+    renderTable(data.columns, data.rows);
+    return;
+  }
+
+  pendingText = null;
+  statusEl.textContent = `${data.rows.length} row(s)`;
+  renderResult(data);
+}
+
+function renderResult(data) {
+  resultsEl.innerHTML = '';
+  if (data.rows.length === 1 && data.columns.length === 1) {
+    const div = document.createElement('div');
+    div.id = 'scalar';
+    div.textContent = `${data.columns[0]}: ${data.rows[0][0]}`;
+    resultsEl.appendChild(div);
+    return;
+  }
+  if (data.is_mermaid) {
+    renderChart(data.chart);
+  }
+  renderTable(data.columns, data.rows);
+}
+
+async function renderChart(mermaidSrc) {
+  const div = document.createElement('div');
+  div.className = 'mermaid';
+  div.textContent = mermaidSrc;
+  resultsEl.appendChild(div);
+  await mermaid.run({ nodes: [div] });
+}
+
+function renderTable(columns, rows) {
+  if (!rows.length) {
+    const p = document.createElement('p');
+    p.textContent = 'No rows.';
+    resultsEl.appendChild(p);
+    return;
+  }
+  const table = document.createElement('table');
+  const thead = document.createElement('tr');
+  columns.forEach(c => { const th = document.createElement('th'); th.textContent = c; thead.appendChild(th); });
+  table.appendChild(thead);
+  rows.slice(0, 200).forEach(row => {
+    const tr = document.createElement('tr');
+    row.forEach(v => { const td = document.createElement('td'); td.textContent = v === null ? '' : v; tr.appendChild(td); });
+    table.appendChild(tr);
+  });
+  resultsEl.appendChild(table);
+}
+</script>
+</body>
+</html>

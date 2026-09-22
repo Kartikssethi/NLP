@@ -1,14 +1,15 @@
 """Minimal terminal UI: speak (or type) a request, see SQL + results.
 
 Run with:
-    python -m app.cli
+    python -m app.cli              interactive typing loop (default)
+    python -m app.cli --voice      record from the mic each turn instead
+    python -m app.cli --text "..." a single one-shot query, then exit
 
 Nothing fancy on purpose (per project scope) — just a loop:
-  1. record 30s of audio (or type instead if you pass --text)
-  2. transcribe it
-  3. turn it into SQL (rules first, Ollama fallback)
-  4. run it against the DB
-  5. print results + a Mermaid chart you can paste into
+  1. get the request (typed, or recorded + transcribed with --voice)
+  2. turn it into SQL (rules first, Ollama fallback)
+  3. run it against the DB
+  4. print results + a Mermaid chart you can paste into
      https://mermaid.live to view
 """
 import argparse
@@ -63,8 +64,9 @@ def run_once(text: str) -> None:
 
 def main() -> None:
     ap = argparse.ArgumentParser(description="Voice-to-SQL CLI")
-    ap.add_argument("--text", help="Type a request instead of speaking it")
-    ap.add_argument("--seconds", type=int, default=None, help="Override recording length")
+    ap.add_argument("--text", help="Run a single query and exit")
+    ap.add_argument("--voice", action="store_true", help="Record from the mic each turn instead of typing")
+    ap.add_argument("--seconds", type=int, default=None, help="Override recording length (--voice only)")
     args = ap.parse_args()
 
     load_sales_data()
@@ -73,18 +75,31 @@ def main() -> None:
         run_once(args.text)
         return
 
-    from app.config import RECORD_SECONDS
-    from app.stt import record_and_transcribe
+    if args.voice:
+        from app.config import RECORD_SECONDS
+        from app.stt import record_and_transcribe
 
+        while True:
+            try:
+                input(f"\nPress Enter to record ({args.seconds or RECORD_SECONDS}s), Ctrl+C to quit...")
+            except KeyboardInterrupt:
+                print("\nBye.")
+                return
+            text = record_and_transcribe(args.seconds or RECORD_SECONDS)
+            if not text:
+                print("Didn't catch any speech, try again.")
+                continue
+            run_once(text)
+        return
+
+    print("Type a query and press Enter (Ctrl+C to quit).")
     while True:
         try:
-            input(f"\nPress Enter to record ({args.seconds or RECORD_SECONDS}s), Ctrl+C to quit...")
-        except KeyboardInterrupt:
+            text = input("\n> ").strip()
+        except (KeyboardInterrupt, EOFError):
             print("\nBye.")
             return
-        text = record_and_transcribe(args.seconds or RECORD_SECONDS)
         if not text:
-            print("Didn't catch any speech, try again.")
             continue
         run_once(text)
 

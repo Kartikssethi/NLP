@@ -4,14 +4,20 @@ Run with:
     uvicorn app.main:app --reload
 
 Endpoints:
+    GET  /                    a small web UI: type or speak a query, see results
     GET  /health          liveness check
     GET  /schema           current DB schema (debugging aid)
     POST /query             {"text": "..."} -> SQL + results + mermaid chart
-    POST /voice-query        records RECORD_SECONDS from the server's mic,
+    POST /transcribe          upload an audio recording (e.g. from the browser's
+                              mic) -> {"text": "..."} via faster-whisper
+    POST /voice-query        records RECORD_SECONDS from the server's own mic,
                               transcribes it, then behaves like /query
     GET  /chart               last chart rendered as a standalone HTML page
 """
-from fastapi import FastAPI, HTTPException
+import tempfile
+from pathlib import Path
+
+from fastapi import FastAPI, HTTPException, UploadFile
 from fastapi.responses import HTMLResponse
 from pydantic import BaseModel
 
@@ -20,6 +26,8 @@ from app.nl2sql import OllamaUnavailable, parse
 from app.viz import build_chart, wrap_html
 
 app = FastAPI(title="Voice-to-SQL")
+
+_INDEX_HTML = (Path(__file__).parent / "static" / "index.html").read_text()
 
 # very small in-memory cache of the last chart so /chart has something to show
 _last_chart: dict[str, str] = {"mermaid": "", "is_mermaid": False}
@@ -44,6 +52,11 @@ class QueryOut(BaseModel):
 @app.on_event("startup")
 def _startup() -> None:
     load_sales_data()
+
+
+@app.get("/", response_class=HTMLResponse)
+def index() -> str:
+    return _INDEX_HTML
 
 
 @app.get("/health")
@@ -115,6 +128,25 @@ def voice_query() -> QueryOut:
     if not text:
         raise HTTPException(status_code=400, detail="Didn't catch any speech.")
     return _run_query(text, confirm=False)
+
+
+@app.post("/transcribe")
+async def transcribe(file: UploadFile) -> dict:
+    """Transcribe an uploaded audio recording (e.g. from the browser's mic)."""
+    from app.stt import transcribe_file
+
+    suffix = Path(file.filename or "").suffix or ".webm"
+    with tempfile.NamedTemporaryFile(suffix=suffix, delete=False) as tmp:
+        tmp.write(await file.read())
+        tmp_path = Path(tmp.name)
+    try:
+        text = transcribe_file(tmp_path)
+    finally:
+        tmp_path.unlink(missing_ok=True)
+
+    if not text:
+        raise HTTPException(status_code=400, detail="Didn't catch any speech.")
+    return {"text": text}
 
 
 @app.get("/chart", response_class=HTMLResponse)
