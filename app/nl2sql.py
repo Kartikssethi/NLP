@@ -350,7 +350,11 @@ def rule_based_parse(text: str) -> ParseResult | None:
     # how to dump filtered raw rows, not compute an aggregate/ranking, so
     # "show me a chart of the worst selling product" needs Ollama too, even
     # though it starts with "show".
-    wants_aggregate = re.search(r"\b(chart|graph|plot|visuali[sz]e|best|worst|most|least)\b", t)
+    wants_aggregate = re.search(
+        r"\b(chart|graph|plot|visuali[sz]e|best|worst|most|least|trend|trends|"
+        r"over time|breakdown|distribution|compare|comparison)\b",
+        t,
+    )
     if not wants_aggregate and re.match(r"(?:please\s+)?(show|list|find|get|display)\b", t):
         where = _extract_filters(t)
         sql = f"SELECT * FROM {TABLE}"
@@ -364,6 +368,38 @@ def rule_based_parse(text: str) -> ParseResult | None:
 
 class OllamaUnavailable(Exception):
     """Raised when the Ollama fallback can't be reached or fails to answer."""
+
+
+def _build_query_plan(text: str) -> str | None:
+    """A lightweight structured read of the question — metric / group-by /
+    filters / sort direction / limit — built from the same extraction
+    helpers rule_based_parse() uses (_resolve_superlative_*, _extract_filters).
+
+    Handed to the Ollama prompt as extra scaffolding so it lands on the
+    right column and aggregation even for a phrasing none of the rule-based
+    patterns fully match — the LLM equivalent of "show your work" before
+    writing the SQL. Only meaningful for the `sales` schema, since these
+    extractors key off its specific known values/aliases; callers skip this
+    for an uploaded dataset's arbitrary schema.
+    """
+    t = _normalize_numbers(text.strip().lower())
+
+    metric = _resolve_superlative_metric(t)
+    dimension = _resolve_superlative_dimension(t)
+    direction = _resolve_superlative_direction(t)
+    filters = _extract_filters(t)
+    limit_match = re.search(r"top\s+(\d+)", t)
+
+    if not any([metric, dimension, direction, filters, limit_match]):
+        return None
+
+    return (
+        f"metric: {metric or '(none detected — infer from the question)'}\n"
+        f"group_by: {dimension or '(none)'}\n"
+        f"filters: {filters or '(none)'}\n"
+        f"sort: {direction or '(unspecified)'}\n"
+        f"limit: {limit_match.group(1) if limit_match else '(none)'}"
+    )
 
 
 def ollama_fallback(
@@ -384,11 +420,14 @@ def ollama_fallback(
     used for a user-uploaded dataset (see app/db.py::import_uploaded_csv),
     which has no hand-written rule-based parser support, so it always goes
     through here rather than confusing the model with the unrelated `sales`
-    schema too.
+    schema too. The sales-specific query plan/strict-rules/few-shot blocks
+    below are skipped for that case since they assume the sales schema.
     """
     import ollama  # imported lazily so the app still runs without it installed/running
 
+    is_sales = not table or table == TABLE
     schema = get_schema(table)
+
     history_block = ""
     if history:
         turns = "\n".join(f"Q: {h['text']}\nSQL: {h['sql']}" for h in history[-5:])
@@ -398,22 +437,74 @@ def ollama_fallback(
             f"follow-up refinement of a prior question:\n{turns}\n\n"
         )
     table_line = f"Write SQL against the `{table}` table.\n" if table else ""
+
+    plan_block = ""
+    if is_sales:
+        plan = _build_query_plan(text)
+        if plan:
+            plan_block = (
+                "Extracted query plan (a best-effort guess from keyword "
+                "matching — trust the question over the plan if they "
+                f"conflict):\n{plan}\n\n"
+            )
+
+    rules_block = ""
+    examples_block = ""
+    if is_sales:
+        rules_block = (
+            "STRICT RULES:\n"
+            "1. Only use tables and columns that appear in the schema above "
+            "— never invent one.\n"
+            "2. Generate a SELECT unless the question explicitly asks to "
+            "delete/remove rows, in which case generate exactly one DELETE "
+            "statement instead.\n"
+            "3. SQLite has no YEAR() function and no separate year column — "
+            "filter a date column with a range instead, e.g. "
+            "inward_date >= '2025-01-01' AND inward_date < '2026-01-01'.\n"
+            "4. WHERE comes before GROUP BY, which comes before ORDER BY.\n"
+            "5. A question about how many units sold should SUM(quantity_sold); "
+            "a question about how many orders/rows should COUNT(*); a "
+            "question about price should AVG(price) unless a total is "
+            "explicitly asked for.\n"
+            "6. Output exactly one SQL statement, nothing else — no markdown "
+            "fences, no explanation, no comments.\n\n"
+        )
+        examples_block = (
+            "EXAMPLES:\n\n"
+            "Q: total quantity sold by brand\n"
+            "SQL: SELECT brand, SUM(quantity_sold) AS total_quantity_sold "
+            "FROM sales GROUP BY brand ORDER BY total_quantity_sold DESC\n\n"
+            "Q: average price of samsung phones in the west region\n"
+            "SQL: SELECT AVG(price) AS avg_price FROM sales WHERE "
+            "LOWER(brand) = 'samsung' AND LOWER(product) = 'mobile phone' "
+            "AND LOWER(region) = 'west'\n\n"
+            "Q: how many laptops were dispatched after january 2024\n"
+            "SQL: SELECT COUNT(*) AS count FROM sales WHERE "
+            "LOWER(product) = 'laptop' AND dispatch_date >= '2024-01-01'\n\n"
+        )
+
     prompt = (
-        "You are a SQL generator for a SQLite database.\n"
+        "You are a highly reliable SQLite SQL generator.\n\n"
         f"{history_block}"
         f"{table_line}"
         f"Schema:\n{schema}\n\n"
-        f"Write ONE SQLite SQL statement (no explanation, no markdown "
-        f"fences, no comments) that does this: {text}\n"
-        "If this asks for a chart/graph/plot, prefer a GROUP BY query that "
-        "returns multiple comparable rows (e.g. one per category) rather "
-        "than a single row, unless a specific top-N count was requested."
+        f"{plan_block}"
+        f"{rules_block}"
+        f"{examples_block}"
+        f"Question: {text}\n\n"
+        "If this asks for a chart/graph/plot/trend/breakdown/comparison, "
+        "prefer a GROUP BY query that returns multiple comparable rows (e.g. "
+        "one per category, or one per date/month for a trend over time) "
+        "rather than a single row, unless a specific top-N count was "
+        "requested.\n\n"
+        "Return ONLY the SQL query."
     )
     client = ollama.Client(host=OLLAMA_HOST)
     try:
         response = client.chat(
             model=OLLAMA_MODEL,
             messages=[{"role": "user", "content": prompt}],
+            options={"temperature": 0},
         )
     except Exception as exc:  # noqa: BLE001 - connection errors, model errors, etc.
         raise OllamaUnavailable(
@@ -423,6 +514,9 @@ def ollama_fallback(
     sql = response["message"]["content"].strip()
     # strip ```sql ... ``` fences if the model added them anyway
     sql = re.sub(r"^```(?:sql)?\s*|\s*```$", "", sql, flags=re.I | re.M).strip()
+    # the odd model escapes a wildcard/underscore in markdown-adjacent output
+    sql = sql.replace("\\*", "*").replace("\\_", "_")
+    sql = sql.strip().rstrip(";").strip()
     is_write = bool(re.match(r"\s*(delete|update|insert)", sql, re.I))
     return ParseResult(sql, "ollama", is_write=is_write)
 
@@ -477,6 +571,36 @@ def generate_diagram(text: str, table: str | None = None) -> str:
     diagram = response["message"]["content"].strip()
     diagram = re.sub(r"^```(?:mermaid)?\s*|\s*```$", "", diagram, flags=re.I | re.M).strip()
     return diagram
+
+
+def explain_sql(sql: str, question: str, table: str | None = None) -> str:
+    """Ask Ollama for a short plain-English explanation of a SQL query
+    already generated for `question` — a "show your work" aid, not part of
+    the query pipeline itself."""
+    import ollama  # imported lazily so the app still runs without it installed/running
+
+    schema = get_schema(table)
+    prompt = (
+        "Explain what this SQL query does, in plain English, for someone "
+        "who doesn't know SQL. 2-4 short sentences, no jargon, no markdown, "
+        "no restating the SQL syntax line by line — describe what data it "
+        "looks at and what it computes.\n\n"
+        f"Database schema:\n{schema}\n\n"
+        f"Original question: {question}\n"
+        f"SQL:\n{sql}"
+    )
+    client = ollama.Client(host=OLLAMA_HOST)
+    try:
+        response = client.chat(
+            model=OLLAMA_MODEL,
+            messages=[{"role": "user", "content": prompt}],
+        )
+    except Exception as exc:  # noqa: BLE001 - connection errors, model errors, etc.
+        raise OllamaUnavailable(
+            f"Couldn't get an explanation from Ollama model {OLLAMA_MODEL!r} at {OLLAMA_HOST}: {exc}"
+        ) from exc
+
+    return response["message"]["content"].strip()
 
 
 def parse(

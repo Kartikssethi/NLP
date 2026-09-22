@@ -126,6 +126,20 @@
     border-radius: 10px; font-family: ui-monospace, "SF Mono", Menlo, monospace;
     font-size: 0.78rem; overflow-x: auto; white-space: pre-wrap; margin-bottom: 10px;
   }
+  .result-actions { display: flex; gap: 6px; margin-bottom: 10px; flex-wrap: wrap; }
+  .action-btn {
+    display: flex; align-items: center; gap: 5px;
+    background: #ece5d2; border: none; color: var(--ink-soft);
+    padding: 5px 11px; border-radius: 16px; cursor: pointer;
+    font-size: 0.73rem; font-weight: 500; font-family: "Inter", sans-serif;
+  }
+  .action-btn:hover { background: #e2d9c0; color: var(--ink); }
+  .action-btn svg { flex-shrink: 0; }
+  .explanation {
+    font-family: "Playfair Display", serif; font-style: italic; font-size: 0.92rem;
+    color: var(--ink); background: #f6f2e4; border: 1px solid var(--border);
+    border-radius: 10px; padding: 11px 14px; margin-bottom: 10px; line-height: 1.5;
+  }
   .status-line { color: var(--ink-soft); font-size: 0.8rem; margin-bottom: 8px; }
   .scalar { font-family: "Playfair Display", serif; font-size: 1.6rem; font-weight: 600; padding: 6px 0; }
   .error-box { color: var(--danger); background: var(--danger-soft); padding: 11px 14px; border-radius: 10px; }
@@ -657,6 +671,7 @@ function renderResult(bubble, data) {
   }
 
   bubble.appendChild(sqlBlock(data));
+  bubble.appendChild(actionsBlock(data));
 
   if (data.rows.length === 1 && data.columns.length === 1) {
     const div = document.createElement('div');
@@ -683,6 +698,99 @@ function sqlBlock(data) {
   div.className = 'sql';
   div.textContent = `${data.source}: ${data.sql}`;
   return div;
+}
+
+function csvEscape(v) {
+  const s = v === null || v === undefined ? '' : String(v);
+  return /[",\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
+}
+
+function toCsv(columns, rows) {
+  const lines = [columns.map(csvEscape).join(',')];
+  rows.forEach(row => lines.push(row.map(csvEscape).join(',')));
+  return lines.join('\n');
+}
+
+function downloadCsv(columns, rows) {
+  const blob = new Blob([toCsv(columns, rows)], { type: 'text/csv;charset=utf-8;' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `query-results-${Date.now()}.csv`;
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
+function copyIcon() {
+  return '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>';
+}
+
+function downloadIcon() {
+  return '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="M7 10l5 5 5-5"/><path d="M12 15V3"/></svg>';
+}
+
+function explainIcon() {
+  return '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M9.5 9a2.5 2.5 0 0 1 5 0c0 1.5-2 2-2 3.5"/><path d="M12 17h.01"/></svg>';
+}
+
+function actionsBlock(data) {
+  const wrap = document.createElement('div');
+  wrap.className = 'result-actions';
+
+  const copyBtn = document.createElement('button');
+  copyBtn.type = 'button';
+  copyBtn.className = 'action-btn';
+  copyBtn.innerHTML = `${copyIcon()}<span>Copy SQL</span>`;
+  copyBtn.addEventListener('click', async () => {
+    try {
+      await navigator.clipboard.writeText(data.sql);
+      copyBtn.querySelector('span').textContent = 'Copied!';
+      setTimeout(() => { copyBtn.querySelector('span').textContent = 'Copy SQL'; }, 1500);
+    } catch { /* clipboard unavailable — ignore */ }
+  });
+  wrap.appendChild(copyBtn);
+
+  if (data.rows.length) {
+    const csvBtn = document.createElement('button');
+    csvBtn.type = 'button';
+    csvBtn.className = 'action-btn';
+    csvBtn.innerHTML = `${downloadIcon()}<span>Download CSV</span>`;
+    csvBtn.addEventListener('click', () => downloadCsv(data.columns, data.rows));
+    wrap.appendChild(csvBtn);
+  }
+
+  const explainBtn = document.createElement('button');
+  explainBtn.type = 'button';
+  explainBtn.className = 'action-btn';
+  explainBtn.innerHTML = `${explainIcon()}<span>Explain</span>`;
+  explainBtn.addEventListener('click', async () => {
+    const existing = wrap.parentElement.querySelector('.explanation');
+    if (existing) { existing.remove(); return; }
+    explainBtn.querySelector('span').textContent = 'Explaining...';
+    explainBtn.disabled = true;
+    let message;
+    try {
+      const resp = await fetch('/explain-sql', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ sql: data.sql, text: data.text || '', table: activeTable }),
+      });
+      const result = await resp.json();
+      message = resp.ok ? result.explanation : (result.detail || `Request failed (${resp.status}).`);
+    } catch (err) {
+      message = `Couldn't reach the server: ${err.message || err}`;
+    }
+    explainBtn.querySelector('span').textContent = 'Explain';
+    explainBtn.disabled = false;
+    const div = document.createElement('div');
+    div.className = 'explanation';
+    div.textContent = message;
+    wrap.insertAdjacentElement('afterend', div);
+    scrollToBottom();
+  });
+  wrap.appendChild(explainBtn);
+
+  return wrap;
 }
 
 function tableBlock(columns, rows) {

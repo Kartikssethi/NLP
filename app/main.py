@@ -24,7 +24,7 @@ from fastapi.responses import HTMLResponse
 from pydantic import BaseModel
 
 from app.db import execute_sql, get_schema, import_uploaded_csv, load_sales_data
-from app.nl2sql import TABLE, OllamaUnavailable, generate_diagram, parse, wants_diagram
+from app.nl2sql import TABLE, OllamaUnavailable, explain_sql, generate_diagram, parse, wants_diagram
 from app.viz import build_chart, wrap_html
 
 app = FastAPI(title="Voice-to-SQL")
@@ -49,6 +49,12 @@ class QueryIn(BaseModel):
     history: list[HistoryTurn] = []
     # Which table to query — "sales" (default) or "user_data" after a CSV
     # upload. See app/db.py::UPLOADED_TABLE.
+    table: str = TABLE
+
+
+class ExplainIn(BaseModel):
+    sql: str
+    text: str = ""
     table: str = TABLE
 
 
@@ -158,6 +164,15 @@ def _run_query(
 @app.post("/query", response_model=QueryOut)
 def query(payload: QueryIn) -> QueryOut:
     return _run_query(payload.text, payload.confirm, payload.history, payload.table)
+
+
+@app.post("/explain-sql")
+def explain(payload: ExplainIn) -> dict:
+    try:
+        explanation = explain_sql(payload.sql, payload.text, table=payload.table)
+    except OllamaUnavailable as exc:
+        raise HTTPException(status_code=502, detail=str(exc))
+    return {"explanation": explanation}
 
 
 @app.post("/voice-query", response_model=QueryOut)
