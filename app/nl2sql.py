@@ -64,6 +64,7 @@ COLUMN_ALIASES = {
     "price": "price", "cost": "price", "prices": "price",
     "qty": "quantity_sold", "quantity": "quantity_sold",
     "units": "quantity_sold", "sold": "quantity_sold",
+    "selling": "quantity_sold", "sells": "quantity_sold", "sell": "quantity_sold",
 }
 
 # Words that name a dimension to GROUP BY, for "<agg> <metric> by <dim>" and
@@ -74,6 +75,40 @@ DIMENSION_WORDS = {
     "region": "region", "regions": "region",
     "customer": "customer_name", "customers": "customer_name",
 }
+
+# Superlative phrasing ("most expensive", "which brand sold the most",
+# "cheapest laptop") — common in real speech, and previously forced to the
+# Ollama fallback entirely since nothing here recognized it.
+_SUPERLATIVE_DESC = {"highest", "most", "top", "best", "maximum", "max", "greatest", "largest", "biggest"}
+_SUPERLATIVE_ASC = {"lowest", "least", "minimum", "min", "smallest", "worst"}
+# "expensive"/"cheap" imply the price column specifically, even with no
+# explicit column word ("what's the most expensive laptop").
+_PRICE_WORDS_DESC = {"expensive", "priciest", "costliest"}
+_PRICE_WORDS_ASC = {"cheap", "cheapest"}
+
+
+def _resolve_superlative_direction(t: str) -> str | None:
+    if re.search(r"\b(" + "|".join(_PRICE_WORDS_DESC | _SUPERLATIVE_DESC) + r")\b", t):
+        return "DESC"
+    if re.search(r"\b(" + "|".join(_PRICE_WORDS_ASC | _SUPERLATIVE_ASC) + r")\b", t):
+        return "ASC"
+    return None
+
+
+def _resolve_superlative_metric(t: str) -> str | None:
+    if re.search(r"\b(" + "|".join(_PRICE_WORDS_DESC | _PRICE_WORDS_ASC) + r")\b", t):
+        return "price"
+    for word, col in COLUMN_ALIASES.items():
+        if re.search(rf"\b{word}\b", t):
+            return col
+    return None
+
+
+def _resolve_superlative_dimension(t: str) -> str | None:
+    for word, col in DIMENSION_WORDS.items():
+        if re.search(rf"\b{word}\b", t):
+            return col
+    return None
 
 # Spoken numbers, e.g. Whisper transcribing "top five" instead of "top 5" —
 # the digit-only regexes below (\d+) never see it unless we normalize first.
@@ -209,6 +244,51 @@ def rule_based_parse(text: str) -> ParseResult | None:
                 sql += f" WHERE {where}"
             sql += f" ORDER BY {col} DESC LIMIT {n}"
             return ParseResult(sql, "rule")
+
+    # Superlative: "which brand sold the most units", "cheapest laptop",
+    # "region with the lowest average price", "most popular brand" — no
+    # explicit "top N"/"by", just a direction word (+ optionally a dimension
+    # to group by, and/or a metric column). Checked after the explicit
+    # numbered top-N patterns above (so "top 5 ... by ..." still gets that
+    # more specific LIMIT-5 handling) and before delete/count/scalar below,
+    # since e.g. "highest average price by brand" would otherwise get
+    # mis-matched by the plain scalar "average of <col>" pattern further
+    # down, ignoring "highest" and "by brand" entirely.
+    direction = _resolve_superlative_direction(t)
+    if direction:
+        dim = _resolve_superlative_dimension(t)
+        metric = _resolve_superlative_metric(t)
+        where = _extract_filters(t)
+        if dim:
+            # "expensive"/"cheap" default to AVG (a per-unit notion of
+            # "expensive brand"); everything else defaults to SUM unless
+            # the utterance explicitly says average/avg/mean.
+            wants_avg = bool(re.search(r"\b(average|avg|mean)\b", t)) or (
+                metric == "price" and re.search(r"\b(expensive|priciest|costliest|cheap|cheapest)\b", t)
+            )
+            if metric:
+                agg = "AVG" if wants_avg else "SUM"
+                sql = f"SELECT {dim}, {agg}({metric}) AS {agg.lower()}_{metric} FROM {TABLE}"
+                order_col = f"{agg.lower()}_{metric}"
+            else:
+                # No metric word found ("most popular brand") — rank by
+                # row count instead of failing outright.
+                sql = f"SELECT {dim}, COUNT(*) AS count FROM {TABLE}"
+                order_col = "count"
+            if where:
+                sql += f" WHERE {where}"
+            sql += f" GROUP BY {dim} ORDER BY {order_col} {direction} LIMIT 1"
+            return ParseResult(sql, "rule")
+        elif metric:
+            # No dimension to group by — a single-row request, e.g.
+            # "most expensive laptop" / "cheapest phone in the west".
+            sql = f"SELECT * FROM {TABLE}"
+            if where:
+                sql += f" WHERE {where}"
+            sql += f" ORDER BY {metric} {direction} LIMIT 1"
+            return ParseResult(sql, "rule")
+        # direction word present but no dimension AND no metric resolved —
+        # too vague for a rule (e.g. bare "the best one"); let Ollama try.
 
     # "remove/delete N ... [filters]" -> DELETE, with a preview SELECT
     m = re.search(r"(remove|delete)\s+(\d+)", t)
