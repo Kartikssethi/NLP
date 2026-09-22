@@ -2,57 +2,148 @@
 <html lang="en">
 <head>
 <meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
 <title>Voice-to-SQL</title>
 <script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
 <style>
-  body { font-family: -apple-system, sans-serif; max-width: 900px; margin: 40px auto; padding: 0 16px; color: #1a1a1a; }
-  h1 { font-size: 1.4rem; }
-  #queryForm { display: flex; gap: 8px; margin-bottom: 8px; }
-  #text { flex: 1; padding: 10px 12px; font-size: 1rem; border: 1px solid #ccc; border-radius: 6px; }
-  button { padding: 10px 18px; font-size: 1rem; border: none; border-radius: 6px; background: #2563eb; color: white; cursor: pointer; }
-  button:hover { background: #1d4ed8; }
-  button.secondary { background: #dc2626; }
-  button.secondary:hover { background: #b91c1c; }
-  #micBtn { background: #f3f4f6; color: #1a1a1a; border: 1px solid #ccc; padding: 10px 14px; display: flex; align-items: center; justify-content: center; }
+  :root {
+    --bg: #f4f5f7;
+    --card: #ffffff;
+    --border: #e3e5e9;
+    --text: #1c1e21;
+    --muted: #6b7280;
+    --accent: #4f46e5;
+    --accent-hover: #4338ca;
+    --danger: #dc2626;
+    --danger-hover: #b91c1c;
+    --radius: 14px;
+  }
+  * { box-sizing: border-box; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    margin: 0;
+    padding: 48px 16px;
+  }
+  .card {
+    max-width: 760px;
+    margin: 0 auto;
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 32px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.04), 0 8px 24px rgba(0,0,0,0.04);
+  }
+  h1 { font-size: 1.3rem; margin: 0 0 4px; font-weight: 600; }
+  .subtitle { color: var(--muted); font-size: 0.9rem; margin: 0 0 20px; }
+  #examples { color: var(--muted); font-size: 0.82rem; margin-bottom: 20px; line-height: 1.6; }
+  #examples code {
+    background: #f0f1f4; padding: 2px 7px; border-radius: 6px; cursor: pointer;
+    font-size: 0.8rem; transition: background 0.15s;
+  }
+  #examples code:hover { background: #e5e7eb; }
+
+  #queryForm { display: flex; gap: 8px; }
+  #text {
+    flex: 1; padding: 12px 14px; font-size: 0.95rem;
+    border: 1px solid var(--border); border-radius: 10px;
+    outline: none; transition: border-color 0.15s, box-shadow 0.15s;
+  }
+  #text:focus { border-color: var(--accent); box-shadow: 0 0 0 3px rgba(79,70,229,0.12); }
+
+  button {
+    padding: 12px 20px; font-size: 0.95rem; font-weight: 500;
+    border: none; border-radius: 10px; cursor: pointer;
+    background: var(--accent); color: white; transition: background 0.15s;
+  }
+  button:hover { background: var(--accent-hover); }
+  button.secondary { background: #f0f1f4; color: var(--text); }
+  button.secondary:hover { background: #e5e7eb; }
+  button.danger { background: var(--danger); }
+  button.danger:hover { background: var(--danger-hover); }
+
+  #micBtn {
+    background: #f0f1f4; color: var(--text); border: 1px solid var(--border);
+    padding: 12px 16px; display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0; position: relative;
+  }
   #micBtn:hover { background: #e5e7eb; }
-  #micBtn.recording { background: #dc2626; color: white; border-color: #dc2626; animation: pulse 1.2s infinite; }
-  @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.6; } }
-  #examples { color: #666; font-size: 0.85rem; margin-bottom: 24px; }
-  #examples code { background: #f2f2f2; padding: 1px 5px; border-radius: 3px; cursor: pointer; }
-  #sql { background: #0f172a; color: #93c5fd; padding: 10px 14px; border-radius: 6px; font-family: ui-monospace, monospace; font-size: 0.85rem; overflow-x: auto; white-space: pre-wrap; margin-bottom: 12px; }
-  #confirmBar { display: none; align-items: center; gap: 10px; background: #fef2f2; border: 1px solid #fecaca; padding: 10px 14px; border-radius: 6px; margin-bottom: 12px; }
-  table { border-collapse: collapse; width: 100%; font-size: 0.85rem; }
-  th, td { border: 1px solid #e5e7eb; padding: 6px 10px; text-align: left; }
-  th { background: #f9fafb; }
-  #scalar { font-size: 1.4rem; padding: 12px 0; }
-  #error { color: #b91c1c; background: #fef2f2; padding: 10px 14px; border-radius: 6px; }
-  #status { color: #666; font-size: 0.85rem; }
+  #micBtn.recording { background: var(--danger); color: white; border-color: var(--danger); }
+  #micBtn.recording:hover { background: var(--danger-hover); }
+
+  #recordingBar {
+    display: none; align-items: center; gap: 10px;
+    margin-top: 12px; padding: 10px 14px;
+    background: #fef2f2; border: 1px solid #fecaca; border-radius: 10px;
+    font-size: 0.85rem; color: var(--danger);
+  }
+  #recordingBar.active { display: flex; }
+  .dot {
+    width: 8px; height: 8px; border-radius: 50%; background: var(--danger);
+    animation: pulse 1s infinite;
+  }
+  @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.3; } }
+  #timer { font-variant-numeric: tabular-nums; font-weight: 600; }
+  #liveCaption { flex: 1; color: #7f1d1d; font-style: italic; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+  #status { color: var(--muted); font-size: 0.85rem; margin-top: 12px; min-height: 1.2em; }
+
+  #confirmBar {
+    display: none; align-items: center; gap: 10px; flex-wrap: wrap;
+    background: #fffbeb; border: 1px solid #fde68a; padding: 12px 14px;
+    border-radius: 10px; margin-top: 12px; font-size: 0.9rem;
+  }
+
+  #sql {
+    display: none; background: #16181d; color: #a5b4fc; padding: 12px 14px;
+    border-radius: 10px; font-family: ui-monospace, "SF Mono", Menlo, monospace;
+    font-size: 0.8rem; overflow-x: auto; white-space: pre-wrap; margin-top: 16px;
+  }
+
+  #results { margin-top: 16px; }
+  table { border-collapse: collapse; width: 100%; font-size: 0.83rem; }
+  th, td { border: 1px solid var(--border); padding: 8px 10px; text-align: left; }
+  th { background: #f9fafb; font-weight: 600; }
+  tr:nth-child(even) td { background: #fafafa; }
+  #scalar { font-size: 1.6rem; font-weight: 600; padding: 16px 0; }
+  #error { color: var(--danger); background: #fef2f2; padding: 12px 14px; border-radius: 10px; }
 </style>
 </head>
 <body>
-<h1>Voice-to-SQL</h1>
-<div id="examples">
-  Try: <code>top 5 brands by quantity sold</code> ·
-  <code>how many laptops in west region</code> ·
-  <code>average price of samsung phones</code> ·
-  <code>delete 2 laptops in central region</code>
+<div class="card">
+  <h1>Voice-to-SQL</h1>
+  <p class="subtitle">Ask a question about the sales data — type it or use the mic.</p>
+  <div id="examples">
+    Try: <code>top 5 brands by quantity sold</code> ·
+    <code>how many laptops in west region</code> ·
+    <code>average price of samsung phones</code> ·
+    <code>delete 2 laptops in central region</code>
+  </div>
+  <form id="queryForm">
+    <input id="text" type="text" placeholder="Ask something about the sales data..." autocomplete="off" autofocus />
+    <button type="button" id="micBtn" title="Record a question">
+      <svg id="micIcon" width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M12 15a3 3 0 0 0 3-3V6a3 3 0 0 0-6 0v6a3 3 0 0 0 3 3z"/><path d="M19 11a1 1 0 0 0-2 0 5 5 0 0 1-10 0 1 1 0 0 0-2 0 7 7 0 0 0 6 6.92V20H9a1 1 0 0 0 0 2h6a1 1 0 0 0 0-2h-2v-2.08A7 7 0 0 0 19 11z"/></svg>
+      <svg id="stopIcon" width="18" height="18" viewBox="0 0 24 24" fill="currentColor" style="display:none"><rect x="6" y="6" width="12" height="12" rx="2"/></svg>
+    </button>
+    <button type="submit">Ask</button>
+  </form>
+
+  <div id="recordingBar">
+    <div class="dot"></div>
+    <span id="timer">0:30</span>
+    <span id="liveCaption">Listening...</span>
+  </div>
+
+  <div id="status"></div>
+  <div id="confirmBar">
+    <span>This will modify the database. Run it?</span>
+    <button id="confirmBtn">Yes, run it</button>
+    <button id="cancelBtn" class="secondary">Cancel</button>
+  </div>
+  <div id="sql"></div>
+  <div id="results"></div>
 </div>
-<form id="queryForm">
-  <input id="text" type="text" placeholder="Ask something about the sales data..." autofocus />
-  <button type="button" id="micBtn" title="Record a question">
-    <svg id="micIcon" width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M12 15a3 3 0 0 0 3-3V6a3 3 0 0 0-6 0v6a3 3 0 0 0 3 3z"/><path d="M19 11a1 1 0 0 0-2 0 5 5 0 0 1-10 0 1 1 0 0 0-2 0 7 7 0 0 0 6 6.92V20H9a1 1 0 0 0 0 2h6a1 1 0 0 0 0-2h-2v-2.08A7 7 0 0 0 19 11z"/></svg>
-    <svg id="stopIcon" width="18" height="18" viewBox="0 0 24 24" fill="currentColor" style="display:none"><rect x="6" y="6" width="12" height="12" rx="2"/></svg>
-  </button>
-  <button type="submit">Ask</button>
-</form>
-<div id="status"></div>
-<div id="confirmBar">
-  <span>This will modify the database. Run it?</span>
-  <button id="confirmBtn">Yes, run it</button>
-  <button id="cancelBtn" class="secondary">Cancel</button>
-</div>
-<div id="sql" style="display:none"></div>
-<div id="results"></div>
 
 <script>
 mermaid.initialize({ startOnLoad: false });
@@ -68,14 +159,33 @@ const cancelBtn = document.getElementById('cancelBtn');
 const micBtn = document.getElementById('micBtn');
 const micIcon = document.getElementById('micIcon');
 const stopIcon = document.getElementById('stopIcon');
+const recordingBar = document.getElementById('recordingBar');
+const timerEl = document.getElementById('timer');
+const liveCaptionEl = document.getElementById('liveCaption');
 
+const RECORD_SECONDS = 30;
 let pendingText = null;
 let mediaRecorder = null;
 let recordedChunks = [];
+let recognition = null;
+let countdownInterval = null;
+let autoStopTimeout = null;
+
+document.querySelectorAll('#examples code').forEach(el => {
+  el.addEventListener('click', () => { textInput.value = el.textContent; form.requestSubmit(); });
+});
+
+form.addEventListener('submit', (e) => {
+  e.preventDefault();
+  runQuery(textInput.value, false);
+});
+
+confirmBtn.addEventListener('click', () => { if (pendingText) runQuery(pendingText, true); });
+cancelBtn.addEventListener('click', () => { confirmBar.style.display = 'none'; pendingText = null; statusEl.textContent = 'Cancelled.'; });
 
 micBtn.addEventListener('click', () => {
   if (mediaRecorder && mediaRecorder.state === 'recording') {
-    mediaRecorder.stop();
+    stopRecording();
   } else {
     startRecording();
   }
@@ -95,17 +205,80 @@ async function startRecording() {
   mediaRecorder.ondataavailable = (e) => { if (e.data.size > 0) recordedChunks.push(e.data); };
   mediaRecorder.onstop = async () => {
     stream.getTracks().forEach(t => t.stop());
-    micBtn.classList.remove('recording');
-    micIcon.style.display = '';
-    stopIcon.style.display = 'none';
+    finishRecordingUI();
     await sendRecording(new Blob(recordedChunks, { type: mediaRecorder.mimeType || 'audio/webm' }));
   };
-
   mediaRecorder.start();
+
   micBtn.classList.add('recording');
   micIcon.style.display = 'none';
   stopIcon.style.display = '';
-  statusEl.textContent = 'Recording... click again to stop.';
+  recordingBar.classList.add('active');
+  statusEl.textContent = '';
+  resultsEl.innerHTML = '';
+  sqlEl.style.display = 'none';
+  confirmBar.style.display = 'none';
+
+  startCountdown();
+  startLiveCaption();
+}
+
+function stopRecording() {
+  if (mediaRecorder && mediaRecorder.state === 'recording') {
+    mediaRecorder.stop(); // triggers onstop -> finishRecordingUI + sendRecording
+  }
+}
+
+function finishRecordingUI() {
+  micBtn.classList.remove('recording');
+  micIcon.style.display = '';
+  stopIcon.style.display = 'none';
+  recordingBar.classList.remove('active');
+  clearInterval(countdownInterval);
+  clearTimeout(autoStopTimeout);
+  if (recognition) { recognition.onend = null; recognition.stop(); recognition = null; }
+}
+
+function startCountdown() {
+  let remaining = RECORD_SECONDS;
+  timerEl.textContent = `0:${String(remaining).padStart(2, '0')}`;
+  countdownInterval = setInterval(() => {
+    remaining -= 1;
+    timerEl.textContent = `0:${String(Math.max(remaining, 0)).padStart(2, '0')}`;
+    if (remaining <= 0) clearInterval(countdownInterval);
+  }, 1000);
+  // The actual cutoff — stops the recorder and sends whatever was captured.
+  autoStopTimeout = setTimeout(() => stopRecording(), RECORD_SECONDS * 1000);
+}
+
+function startLiveCaption() {
+  const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+  if (!SpeechRecognition) {
+    liveCaptionEl.textContent = '(live captions not supported in this browser — recording still works)';
+    return;
+  }
+  recognition = new SpeechRecognition();
+  recognition.continuous = true;
+  recognition.interimResults = true;
+  recognition.lang = 'en-US';
+  liveCaptionEl.textContent = 'Listening...';
+
+  recognition.onresult = (event) => {
+    let transcript = '';
+    for (let i = 0; i < event.results.length; i++) {
+      transcript += event.results[i][0].transcript;
+    }
+    liveCaptionEl.textContent = transcript || 'Listening...';
+  };
+  recognition.onerror = () => { /* live captions are best-effort; ignore */ };
+  recognition.onend = () => {
+    // Some browsers auto-stop recognition well before 30s; restart it while
+    // we're still actually recording so captions keep going.
+    if (mediaRecorder && mediaRecorder.state === 'recording') {
+      try { recognition.start(); } catch { /* already starting */ }
+    }
+  };
+  try { recognition.start(); } catch { /* ignore */ }
 }
 
 async function sendRecording(blob) {
@@ -130,18 +303,6 @@ async function sendRecording(blob) {
   textInput.value = data.text;
   runQuery(data.text, false);
 }
-
-document.querySelectorAll('#examples code').forEach(el => {
-  el.addEventListener('click', () => { textInput.value = el.textContent; form.requestSubmit(); });
-});
-
-form.addEventListener('submit', (e) => {
-  e.preventDefault();
-  runQuery(textInput.value, false);
-});
-
-confirmBtn.addEventListener('click', () => { if (pendingText) runQuery(pendingText, true); });
-cancelBtn.addEventListener('click', () => { confirmBar.style.display = 'none'; pendingText = null; statusEl.textContent = 'Cancelled.'; });
 
 async function runQuery(text, confirm) {
   if (!text.trim()) return;
