@@ -261,8 +261,12 @@ def rule_based_parse(text: str) -> ParseResult | None:
                 sql += f" WHERE {where}"
             return ParseResult(sql, "rule")
 
-    # generic "show/list/find [all] sales [filters]"
-    if re.search(r"\b(show|list|find|get)\b", t):
+    # generic "show/list/find/get/display [all] sales [filters]" — anchored
+    # at the start of the utterance, not just "contains the word somewhere",
+    # so a question like "can I get a graph on..." (which isn't actually a
+    # show-me-rows request) falls through to the Ollama fallback instead of
+    # being misread as one.
+    if re.match(r"(?:please\s+)?(show|list|find|get|display)\b", t):
         where = _extract_filters(t)
         sql = f"SELECT * FROM {TABLE}"
         if where:
