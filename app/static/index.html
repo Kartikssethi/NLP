@@ -32,29 +32,47 @@
     background: var(--bg); color: var(--ink);
   }
   .app {
-    display: flex; flex-direction: column; height: 100vh; max-width: 820px; margin: 0 auto;
+    display: flex; flex-direction: column; height: 100vh; max-width: 860px; margin: 0 auto;
+    background: var(--bg);
   }
 
   /* ---- header ---- */
   header {
-    display: flex; align-items: baseline; justify-content: space-between;
-    padding: 18px 24px 14px; flex-shrink: 0;
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 14px 24px; flex-shrink: 0; gap: 12px;
+    background: var(--panel);
+    border-bottom: 1px solid var(--border);
+    box-shadow: 0 1px 0 rgba(26,42,29,0.02), 0 4px 14px rgba(26,42,29,0.04);
+    position: relative; z-index: 1;
   }
-  .brand { display: flex; align-items: baseline; gap: 10px; }
-  .brand .eyebrow {
-    font-size: 0.68rem; letter-spacing: 0.1em; text-transform: uppercase;
-    color: var(--gold); font-weight: 600;
+  .brand { display: flex; align-items: center; gap: 11px; min-width: 0; }
+  .logo-mark {
+    width: 36px; height: 36px; border-radius: 10px; flex-shrink: 0;
+    background: linear-gradient(155deg, #24402c, #16241a);
+    display: flex; align-items: center; justify-content: center;
+    box-shadow: inset 0 1px 0 rgba(255,255,255,0.08);
   }
-  .brand h1 { font-family: "Playfair Display", serif; font-weight: 700; font-size: 1.3rem; margin: 0; }
-  #newChatBtn {
-    font-size: 0.8rem; font-weight: 500; color: var(--ink-soft);
-    background: none; border: 1px solid var(--border); padding: 7px 13px;
-    border-radius: 9px; cursor: pointer; font-family: "Inter", sans-serif;
+  .brand-text { min-width: 0; }
+  .brand h1 {
+    font-family: "Playfair Display", serif; font-weight: 700; font-size: 1.18rem;
+    margin: 0; line-height: 1.15; letter-spacing: -0.01em;
   }
-  #newChatBtn:hover { background: #ece5d2; color: var(--ink); }
+  #datasetLabel {
+    font-size: 0.74rem; color: var(--ink-soft); display: flex; align-items: center; gap: 5px;
+    overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  }
+  #datasetLabel .dot { width: 5px; height: 5px; border-radius: 50%; background: var(--gold); flex-shrink: 0; animation: none; }
+
+  .header-actions { display: flex; align-items: center; gap: 6px; flex-shrink: 0; }
+  .icon-btn {
+    width: 36px; height: 36px; border-radius: 50%; background: transparent;
+    border: 1px solid transparent; color: var(--ink-soft);
+    display: flex; align-items: center; justify-content: center; cursor: pointer;
+  }
+  .icon-btn:hover { background: #ece5d2; color: var(--ink); }
 
   /* ---- scrollable chat ---- */
-  #chat { flex: 1; overflow-y: auto; padding: 8px 24px 16px; }
+  #chat { flex: 1; overflow-y: auto; padding: 20px 24px 16px; }
 
   .welcome { padding: 40px 12px 24px; }
   .welcome .subtitle {
@@ -68,16 +86,26 @@
   }
   #examples code:hover { background: #d8c393; }
 
-  .msg { display: flex; flex-direction: column; margin-bottom: 18px; }
-  .msg.user { align-items: flex-end; }
-  .msg.assistant { align-items: flex-start; }
+  .msg-row { display: flex; gap: 10px; margin-bottom: 20px; align-items: flex-start; }
+  .msg-row.user { flex-direction: row-reverse; }
+  .avatar {
+    width: 30px; height: 30px; border-radius: 50%; flex-shrink: 0;
+    display: flex; align-items: center; justify-content: center;
+    margin-top: 2px;
+  }
+  .avatar.assistant-avatar { background: linear-gradient(155deg, #24402c, #16241a); }
+  .avatar.user-avatar { background: var(--gold-soft); color: #5a4322; }
+
+  .msg { display: flex; flex-direction: column; min-width: 0; }
+  .msg.user { align-items: flex-end; flex: 0 1 auto; max-width: 82%; }
+  .msg.assistant { align-items: flex-start; flex: 1 1 auto; min-width: 0; }
   .msg-meta {
     display: flex; align-items: center; gap: 6px; font-size: 0.74rem;
     color: var(--ink-soft); margin-bottom: 5px; padding: 0 4px;
   }
   .msg-meta .who { font-weight: 600; color: var(--ink); }
   .msg-meta .check { color: var(--gold); }
-  .bubble { max-width: 88%; border-radius: 18px; padding: 12px 16px; }
+  .bubble { max-width: 100%; border-radius: 18px; padding: 12px 16px; }
   .msg.user .bubble { background: var(--bubble-user); color: #f5f2ea; font-size: 0.96rem; }
   .msg.assistant .bubble {
     background: var(--bubble-assistant); border: 1px solid var(--border);
@@ -121,19 +149,15 @@
   /* ---- composer ---- */
   .composer-wrap { flex-shrink: 0; padding: 10px 24px 20px; background: var(--bg); }
 
-  .toolbar { display: flex; align-items: center; gap: 8px; margin-bottom: 10px; flex-wrap: wrap; }
+  .toolbar { display: flex; align-items: center; gap: 6px; margin-bottom: 8px; flex-wrap: wrap; }
   .pill-btn {
-    display: flex; align-items: center; gap: 6px;
-    background: var(--panel); border: 1px solid var(--border); color: var(--ink);
-    padding: 7px 13px; border-radius: 20px; cursor: pointer;
-    font-size: 0.78rem; font-weight: 500; font-family: "Inter", sans-serif;
+    display: flex; align-items: center; gap: 5px;
+    background: transparent; border: none; color: var(--ink-soft);
+    padding: 5px 10px; border-radius: 20px; cursor: pointer;
+    font-size: 0.74rem; font-weight: 500; font-family: "Inter", sans-serif;
   }
-  .pill-btn:hover { background: #ece5d2; }
+  .pill-btn:hover { background: #ece5d2; color: var(--ink); }
   .pill-btn svg { flex-shrink: 0; }
-  #datasetBadge {
-    font-size: 0.78rem; color: var(--ink-soft); padding: 7px 4px;
-    overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 220px;
-  }
 
   #recordingBar {
     display: none; flex-direction: column; gap: 6px;
@@ -182,14 +206,14 @@
   #micBtn.recording { color: var(--danger); }
 
   @media (max-width: 480px) {
-    header { padding: 14px 14px 10px; }
-    .brand h1 { font-size: 1.05rem; }
-    #newChatBtn { font-size: 0.75rem; padding: 6px 10px; }
-    #chat { padding: 4px 14px 12px; }
+    header { padding: 12px 14px; }
+    .brand h1 { font-size: 1.02rem; }
+    .logo-mark { width: 32px; height: 32px; }
+    #chat { padding: 14px 14px 12px; }
     .composer-wrap { padding: 8px 14px 16px; }
     #queryForm { padding: 4px 4px 4px 14px; }
-    .bubble { max-width: 96%; }
-    #datasetBadge { max-width: 140px; }
+    .msg.user { max-width: 90%; }
+    .avatar { width: 26px; height: 26px; }
   }
 </style>
 </head>
@@ -197,10 +221,19 @@
 <div class="app">
   <header>
     <div class="brand">
-      <span class="eyebrow" id="datasetEyebrow">Sales data</span>
-      <h1>Voice-to-SQL</h1>
+      <div class="logo-mark">
+        <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#e8dfc8" stroke-width="2.2" stroke-linecap="round"><path d="M4 19V10"/><path d="M12 19V5"/><path d="M20 19v-6"/></svg>
+      </div>
+      <div class="brand-text">
+        <h1>Voice-to-SQL</h1>
+        <div id="datasetLabel"><span class="dot"></span><span id="datasetLabelText">Sales data</span></div>
+      </div>
     </div>
-    <button type="button" id="newChatBtn">New chat</button>
+    <div class="header-actions">
+      <button type="button" class="icon-btn" id="newChatBtn" title="New chat">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M5 12h14"/></svg>
+      </button>
+    </div>
   </header>
 
   <div id="chat">
@@ -224,7 +257,6 @@
         Upload dataset
       </button>
       <button type="button" class="pill-btn" id="sampleBtn" style="display:none">Use sample data</button>
-      <span id="datasetBadge"></span>
     </div>
 
     <div id="recordingBar">
@@ -255,7 +287,7 @@ const chatEl = document.getElementById('chat');
 const welcomeEl = document.getElementById('welcome');
 const messagesEl = document.getElementById('messages');
 const newChatBtn = document.getElementById('newChatBtn');
-const datasetEyebrow = document.getElementById('datasetEyebrow');
+const datasetLabelText = document.getElementById('datasetLabelText');
 
 const form = document.getElementById('queryForm');
 const textInput = document.getElementById('text');
@@ -269,7 +301,6 @@ const liveCaptionEl = document.getElementById('liveCaption');
 const csvInput = document.getElementById('csvInput');
 const uploadBtn = document.getElementById('uploadBtn');
 const sampleBtn = document.getElementById('sampleBtn');
-const datasetBadge = document.getElementById('datasetBadge');
 
 const RECORD_SECONDS = 30;
 const LIVE_TRANSCRIBE_INTERVAL_MS = 3000;
@@ -347,8 +378,7 @@ csvInput.addEventListener('change', async () => {
 
   activeTable = data.table;
   conversationHistory = []; // new dataset — old follow-up context no longer applies
-  datasetEyebrow.textContent = data.filename;
-  datasetBadge.textContent = `${data.row_count} rows · ${data.columns.length} columns`;
+  datasetLabelText.textContent = `${data.filename} · ${data.row_count} rows`;
   sampleBtn.style.display = '';
   addSystemNote(`Loaded ${data.filename} — ${data.row_count} rows, columns: ${data.columns.join(', ')}`);
 });
@@ -357,8 +387,7 @@ sampleBtn.addEventListener('click', async () => {
   await fetch('/use-sample-dataset', { method: 'POST' });
   activeTable = 'sales';
   conversationHistory = [];
-  datasetEyebrow.textContent = 'Sales data';
-  datasetBadge.textContent = '';
+  datasetLabelText.textContent = 'Sales data';
   sampleBtn.style.display = 'none';
   addSystemNote('Switched back to the sample sales dataset.');
 });
@@ -386,8 +415,24 @@ function checkmarkIcon() {
   return '<svg class="check" width="14" height="10" viewBox="0 0 16 11" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M1 5.5L4.5 9L11 1.5"/><path d="M5.5 5.5L9 9L15.5 1.5"/></svg>';
 }
 
+function userAvatar() {
+  const div = document.createElement('div');
+  div.className = 'avatar user-avatar';
+  div.innerHTML = '<svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor"><path d="M12 12a5 5 0 1 0 0-10 5 5 0 0 0 0 10zm0 2c-4.4 0-8 2.2-8 5v2h16v-2c0-2.8-3.6-5-8-5z"/></svg>';
+  return div;
+}
+
+function assistantAvatar() {
+  const div = document.createElement('div');
+  div.className = 'avatar assistant-avatar';
+  div.innerHTML = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#e8dfc8" stroke-width="2.4" stroke-linecap="round"><path d="M4 19V10"/><path d="M12 19V5"/><path d="M20 19v-6"/></svg>';
+  return div;
+}
+
 function addUserMessage(text) {
   welcomeEl.style.display = 'none';
+  const row = document.createElement('div');
+  row.className = 'msg-row user';
   const msg = document.createElement('div');
   msg.className = 'msg user';
   const meta = document.createElement('div');
@@ -397,11 +442,14 @@ function addUserMessage(text) {
   bubble.className = 'bubble';
   bubble.textContent = text;
   msg.append(meta, bubble);
-  messagesEl.appendChild(msg);
+  row.append(userAvatar(), msg);
+  messagesEl.appendChild(row);
   scrollToBottom();
 }
 
 function addAssistantMessage() {
+  const row = document.createElement('div');
+  row.className = 'msg-row assistant';
   const msg = document.createElement('div');
   msg.className = 'msg assistant';
   const meta = document.createElement('div');
@@ -411,7 +459,8 @@ function addAssistantMessage() {
   bubble.className = 'bubble';
   bubble.innerHTML = '<div class="thinking"><span></span><span></span><span></span></div>';
   msg.append(meta, bubble);
-  messagesEl.appendChild(msg);
+  row.append(assistantAvatar(), msg);
+  messagesEl.appendChild(row);
   scrollToBottom();
   return bubble;
 }
