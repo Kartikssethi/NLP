@@ -366,7 +366,9 @@ class OllamaUnavailable(Exception):
     """Raised when the Ollama fallback can't be reached or fails to answer."""
 
 
-def ollama_fallback(text: str, history: list[dict[str, str]] | None = None) -> ParseResult:
+def ollama_fallback(
+    text: str, history: list[dict[str, str]] | None = None, table: str | None = None
+) -> ParseResult:
     """Ask an Ollama model to generate SQL when the rules don't match.
 
     Requires `ollama serve` running (locally, or OLLAMA_HOST pointed at a
@@ -377,10 +379,16 @@ def ollama_fallback(text: str, history: list[dict[str, str]] | None = None) -> P
     `history` is prior turns in this conversation, oldest first, each a
     {"text": ..., "sql": ...} dict — lets a follow-up like "now break that
     down by region" resolve "that" against what was already asked/run.
+
+    `table` scopes the schema shown to the model to just that one table —
+    used for a user-uploaded dataset (see app/db.py::import_uploaded_csv),
+    which has no hand-written rule-based parser support, so it always goes
+    through here rather than confusing the model with the unrelated `sales`
+    schema too.
     """
     import ollama  # imported lazily so the app still runs without it installed/running
 
-    schema = get_schema()
+    schema = get_schema(table)
     history_block = ""
     if history:
         turns = "\n".join(f"Q: {h['text']}\nSQL: {h['sql']}" for h in history[-5:])
@@ -389,9 +397,11 @@ def ollama_fallback(text: str, history: list[dict[str, str]] | None = None) -> P
             "to resolve references like \"that\", \"it\", \"those\", or a "
             f"follow-up refinement of a prior question:\n{turns}\n\n"
         )
+    table_line = f"Write SQL against the `{table}` table.\n" if table else ""
     prompt = (
         "You are a SQL generator for a SQLite database.\n"
         f"{history_block}"
+        f"{table_line}"
         f"Schema:\n{schema}\n\n"
         f"Write ONE SQLite SQL statement (no explanation, no markdown "
         f"fences, no comments) that does this: {text}\n"
@@ -417,7 +427,17 @@ def ollama_fallback(text: str, history: list[dict[str, str]] | None = None) -> P
     return ParseResult(sql, "ollama", is_write=is_write)
 
 
-def parse(text: str, history: list[dict[str, str]] | None = None) -> ParseResult:
+def parse(
+    text: str, history: list[dict[str, str]] | None = None, table: str | None = None
+) -> ParseResult:
+    # `table` non-None means the active dataset is a user-uploaded CSV, not
+    # the sample `sales` table the rule-based parser is hand-tuned for —
+    # its patterns reference sales-specific columns and known values
+    # (KNOWN_BRANDS, KNOWN_REGIONS, ...), so they'd misfire against an
+    # arbitrary schema. Go straight to Ollama, schema-scoped to that table.
+    if table and table != TABLE:
+        return ollama_fallback(text, history=history, table=table)
+
     # The rule-based parser has no conversational memory — it's a fast path
     # for standalone phrasings. A follow-up ("now just for laptops") won't
     # match any of its patterns anyway, so it naturally falls through here.

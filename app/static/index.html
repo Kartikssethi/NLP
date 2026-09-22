@@ -12,7 +12,7 @@
   :root {
     --bg: #f2ede0;
     --panel: #faf7ee;
-    --bubble-user: #1c3324;
+    --bubble-user: #1c1c1c;
     --bubble-assistant: #ffffff;
     --ink: #1a2a1d;
     --ink-soft: #5b6b56;
@@ -42,7 +42,7 @@
   }
   .brand { display: flex; align-items: baseline; gap: 10px; }
   .brand .eyebrow {
-    font-size: 0.68rem; letter-spacing: 0.14em; text-transform: uppercase;
+    font-size: 0.68rem; letter-spacing: 0.1em; text-transform: uppercase;
     color: var(--gold); font-weight: 600;
   }
   .brand h1 { font-family: "Playfair Display", serif; font-weight: 700; font-size: 1.3rem; margin: 0; }
@@ -68,18 +68,20 @@
   }
   #examples code:hover { background: #d8c393; }
 
-  .msg { display: flex; margin-bottom: 16px; }
-  .msg.user { justify-content: flex-end; }
-  .msg.assistant { justify-content: flex-start; }
-  .bubble { max-width: 88%; border-radius: 16px; padding: 12px 16px; }
-  .msg.user .bubble {
-    background: var(--bubble-user); color: #f4efe1; border-bottom-right-radius: 4px;
-    font-size: 0.96rem;
+  .msg { display: flex; flex-direction: column; margin-bottom: 18px; }
+  .msg.user { align-items: flex-end; }
+  .msg.assistant { align-items: flex-start; }
+  .msg-meta {
+    display: flex; align-items: center; gap: 6px; font-size: 0.74rem;
+    color: var(--ink-soft); margin-bottom: 5px; padding: 0 4px;
   }
+  .msg-meta .who { font-weight: 600; color: var(--ink); }
+  .msg-meta .check { color: var(--gold); }
+  .bubble { max-width: 88%; border-radius: 18px; padding: 12px 16px; }
+  .msg.user .bubble { background: var(--bubble-user); color: #f5f2ea; font-size: 0.96rem; }
   .msg.assistant .bubble {
     background: var(--bubble-assistant); border: 1px solid var(--border);
-    border-bottom-left-radius: 4px; width: 100%;
-    box-shadow: 0 1px 2px rgba(26,42,29,0.03);
+    width: 100%; box-shadow: 0 1px 2px rgba(26,42,29,0.03);
   }
 
   .thinking { display: flex; gap: 4px; padding: 4px 2px; }
@@ -99,6 +101,10 @@
   .status-line { color: var(--ink-soft); font-size: 0.8rem; margin-bottom: 8px; }
   .scalar { font-family: "Playfair Display", serif; font-size: 1.6rem; font-weight: 600; padding: 6px 0; }
   .error-box { color: var(--danger); background: var(--danger-soft); padding: 11px 14px; border-radius: 10px; }
+  .system-note {
+    align-self: center; color: var(--ink-soft); font-size: 0.78rem;
+    background: #ece5d2; padding: 6px 14px; border-radius: 20px; margin-bottom: 18px;
+  }
 
   .confirm-box {
     display: flex; align-items: center; gap: 10px; flex-wrap: wrap;
@@ -113,7 +119,22 @@
   tr:nth-child(even) td { background: #f8f4e8; }
 
   /* ---- composer ---- */
-  .composer-wrap { flex-shrink: 0; padding: 12px 24px 20px; background: var(--bg); }
+  .composer-wrap { flex-shrink: 0; padding: 10px 24px 20px; background: var(--bg); }
+
+  .toolbar { display: flex; align-items: center; gap: 8px; margin-bottom: 10px; flex-wrap: wrap; }
+  .pill-btn {
+    display: flex; align-items: center; gap: 6px;
+    background: var(--panel); border: 1px solid var(--border); color: var(--ink);
+    padding: 7px 13px; border-radius: 20px; cursor: pointer;
+    font-size: 0.78rem; font-weight: 500; font-family: "Inter", sans-serif;
+  }
+  .pill-btn:hover { background: #ece5d2; }
+  .pill-btn svg { flex-shrink: 0; }
+  #datasetBadge {
+    font-size: 0.78rem; color: var(--ink-soft); padding: 7px 4px;
+    overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 220px;
+  }
+
   #recordingBar {
     display: none; flex-direction: column; gap: 6px;
     margin-bottom: 10px; padding: 12px 15px;
@@ -130,8 +151,8 @@
   }
 
   #queryForm {
-    display: flex; gap: 8px; background: #fff; border: 1px solid var(--border);
-    border-radius: 16px; padding: 6px 6px 6px 16px; box-shadow: 0 1px 2px rgba(26,42,29,0.04), 0 8px 20px rgba(26,42,29,0.05);
+    display: flex; align-items: center; gap: 8px; background: #fff; border: 1px solid var(--border);
+    border-radius: 26px; padding: 6px 6px 6px 18px; box-shadow: 0 1px 2px rgba(26,42,29,0.04), 0 8px 20px rgba(26,42,29,0.05);
   }
   #text {
     flex: 1; border: none; outline: none; font-size: 1rem; font-family: "Inter", sans-serif;
@@ -139,24 +160,25 @@
   }
   #text::placeholder { color: #9aa596; }
 
-  button {
-    border: none; border-radius: 11px; cursor: pointer;
-    font-weight: 600; font-family: "Inter", sans-serif; transition: background 0.15s;
-  }
+  button { border: none; cursor: pointer; font-family: "Inter", sans-serif; transition: background 0.15s; }
+
   #sendBtn {
-    padding: 11px 20px; font-size: 0.95rem; background: var(--accent); color: var(--panel); flex-shrink: 0;
+    width: 42px; height: 42px; border-radius: 50%; background: #111; color: #fff;
+    display: flex; align-items: center; justify-content: center; flex-shrink: 0;
   }
-  #sendBtn:hover { background: var(--accent-hover); }
-  .secondary { padding: 9px 16px; font-size: 0.85rem; background: #ece5d2; color: var(--ink); }
+  #sendBtn:hover { background: #000; }
+  #sendBtn svg { margin-left: -1px; }
+
+  .secondary { padding: 9px 16px; font-size: 0.85rem; font-weight: 600; border-radius: 11px; background: #ece5d2; color: var(--ink); }
   .secondary:hover { background: #e2d9c0; }
-  .danger { padding: 9px 16px; font-size: 0.85rem; background: var(--danger); color: #fff; }
-  .danger:hover { background: #7f2f24; }
+  .primary { padding: 9px 16px; font-size: 0.85rem; font-weight: 600; border-radius: 11px; background: var(--accent); color: var(--panel); }
+  .primary:hover { background: var(--accent-hover); }
 
   #micBtn {
-    background: transparent; color: var(--ink-soft); border: none;
-    padding: 10px 12px; display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+    background: transparent; color: var(--ink-soft); border-radius: 50%;
+    width: 38px; height: 38px; display: flex; align-items: center; justify-content: center; flex-shrink: 0;
   }
-  #micBtn:hover { background: #ece5d2; border-radius: 10px; }
+  #micBtn:hover { background: #ece5d2; }
   #micBtn.recording { color: var(--danger); }
 
   @media (max-width: 480px) {
@@ -164,10 +186,10 @@
     .brand h1 { font-size: 1.05rem; }
     #newChatBtn { font-size: 0.75rem; padding: 6px 10px; }
     #chat { padding: 4px 14px 12px; }
-    .composer-wrap { padding: 10px 14px 16px; }
-    #queryForm { padding: 4px 4px 4px 12px; }
-    #sendBtn { padding: 10px 14px; }
+    .composer-wrap { padding: 8px 14px 16px; }
+    #queryForm { padding: 4px 4px 4px 14px; }
     .bubble { max-width: 96%; }
+    #datasetBadge { max-width: 140px; }
   }
 </style>
 </head>
@@ -175,7 +197,7 @@
 <div class="app">
   <header>
     <div class="brand">
-      <span class="eyebrow">Sales data</span>
+      <span class="eyebrow" id="datasetEyebrow">Sales data</span>
       <h1>Voice-to-SQL</h1>
     </div>
     <button type="button" id="newChatBtn">New chat</button>
@@ -195,6 +217,16 @@
   </div>
 
   <div class="composer-wrap">
+    <div class="toolbar">
+      <input type="file" id="csvInput" accept=".csv" style="display:none" />
+      <button type="button" class="pill-btn" id="uploadBtn">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"/></svg>
+        Upload dataset
+      </button>
+      <button type="button" class="pill-btn" id="sampleBtn" style="display:none">Use sample data</button>
+      <span id="datasetBadge"></span>
+    </div>
+
     <div id="recordingBar">
       <div class="recordingHead">
         <div class="dot"></div>
@@ -204,12 +236,14 @@
     </div>
 
     <form id="queryForm">
-      <input id="text" type="text" placeholder="Ask something about the sales data..." autocomplete="off" autofocus />
+      <input id="text" type="text" placeholder="Ask something about the data..." autocomplete="off" autofocus />
       <button type="button" id="micBtn" title="Record a question">
-        <svg id="micIcon" width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M12 15a3 3 0 0 0 3-3V6a3 3 0 0 0-6 0v6a3 3 0 0 0 3 3z"/><path d="M19 11a1 1 0 0 0-2 0 5 5 0 0 1-10 0 1 1 0 0 0-2 0 7 7 0 0 0 6 6.92V20H9a1 1 0 0 0 0 2h6a1 1 0 0 0 0-2h-2v-2.08A7 7 0 0 0 19 11z"/></svg>
-        <svg id="stopIcon" width="20" height="20" viewBox="0 0 24 24" fill="currentColor" style="display:none"><rect x="6" y="6" width="12" height="12" rx="2"/></svg>
+        <svg id="micIcon" width="19" height="19" viewBox="0 0 24 24" fill="currentColor"><path d="M12 15a3 3 0 0 0 3-3V6a3 3 0 0 0-6 0v6a3 3 0 0 0 3 3z"/><path d="M19 11a1 1 0 0 0-2 0 5 5 0 0 1-10 0 1 1 0 0 0-2 0 7 7 0 0 0 6 6.92V20H9a1 1 0 0 0 0 2h6a1 1 0 0 0 0-2h-2v-2.08A7 7 0 0 0 19 11z"/></svg>
+        <svg id="stopIcon" width="19" height="19" viewBox="0 0 24 24" fill="currentColor" style="display:none"><rect x="6" y="6" width="12" height="12" rx="2"/></svg>
       </button>
-      <button type="submit" id="sendBtn">Ask</button>
+      <button type="submit" id="sendBtn" title="Send">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M3.4 20.6l17.5-8.4a1 1 0 0 0 0-1.8L3.4 1.9a1 1 0 0 0-1.4 1.1L4 11 2 20a1 1 0 0 0 1.4 1.1z"/></svg>
+      </button>
     </form>
   </div>
 </div>
@@ -221,6 +255,7 @@ const chatEl = document.getElementById('chat');
 const welcomeEl = document.getElementById('welcome');
 const messagesEl = document.getElementById('messages');
 const newChatBtn = document.getElementById('newChatBtn');
+const datasetEyebrow = document.getElementById('datasetEyebrow');
 
 const form = document.getElementById('queryForm');
 const textInput = document.getElementById('text');
@@ -231,8 +266,13 @@ const recordingBar = document.getElementById('recordingBar');
 const timerEl = document.getElementById('timer');
 const liveCaptionEl = document.getElementById('liveCaption');
 
+const csvInput = document.getElementById('csvInput');
+const uploadBtn = document.getElementById('uploadBtn');
+const sampleBtn = document.getElementById('sampleBtn');
+const datasetBadge = document.getElementById('datasetBadge');
+
 const RECORD_SECONDS = 30;
-const SpeechRecognitionCtor = window.SpeechRecognition || window.webkitSpeechRecognition;
+const LIVE_TRANSCRIBE_INTERVAL_MS = 3000;
 
 let countdownInterval = null;
 let autoStopTimeout = null;
@@ -243,14 +283,19 @@ let autoStopTimeout = null;
 // it (see nl2sql.py). Cleared on page reload or via "New chat".
 let conversationHistory = [];
 
-// --- Speech-to-text primary path: the browser's own free recognizer ------
-let recognition = null;
-let finalTranscript = '';
-let shouldContinueListening = false;
+// Which table /query runs against — "sales" (built-in) until a CSV is
+// uploaded, then "user_data". See app/db.py::UPLOADED_TABLE.
+let activeTable = 'sales';
 
-// --- Fallback path (Safari/Firefox): record audio, POST to /transcribe ---
+// --- Voice input: faster-whisper, with periodic re-transcription while
+// recording so the input updates "live" as you talk, not just at the end.
 let mediaRecorder = null;
 let recordedChunks = [];
+let liveTranscribeTimer = null;
+let transcribing = false;
+let recording = false;
+let lastTranscript = ''; // last successful transcription this recording, used as a
+                          // fallback if the final call lands while a periodic one is in-flight
 
 document.querySelectorAll('#examples code').forEach(el => {
   el.addEventListener('click', () => { textInput.value = el.textContent; form.requestSubmit(); });
@@ -270,15 +315,62 @@ newChatBtn.addEventListener('click', () => {
 });
 
 micBtn.addEventListener('click', () => {
-  const isRecording = (recognition && shouldContinueListening) || (mediaRecorder && mediaRecorder.state === 'recording');
-  if (isRecording) {
-    stopRecording();
-  } else if (SpeechRecognitionCtor) {
-    startSpeechRecognition();
-  } else {
-    startMediaRecorderFallback();
-  }
+  if (recording) stopRecording();
+  else startRecording();
 });
+
+// --- Dataset upload --------------------------------------------------------
+
+uploadBtn.addEventListener('click', () => csvInput.click());
+
+csvInput.addEventListener('change', async () => {
+  const file = csvInput.files[0];
+  csvInput.value = '';
+  if (!file) return;
+
+  addSystemNote(`Loading ${file.name}...`);
+  const form = new FormData();
+  form.append('file', file);
+
+  let resp, data;
+  try {
+    resp = await fetch('/upload-dataset', { method: 'POST', body: form });
+    data = await resp.json();
+  } catch (err) {
+    addSystemNote(`Upload failed: ${err}`);
+    return;
+  }
+  if (!resp.ok) {
+    addSystemNote((data && data.detail) || 'Upload failed.');
+    return;
+  }
+
+  activeTable = data.table;
+  conversationHistory = []; // new dataset — old follow-up context no longer applies
+  datasetEyebrow.textContent = data.filename;
+  datasetBadge.textContent = `${data.row_count} rows · ${data.columns.length} columns`;
+  sampleBtn.style.display = '';
+  addSystemNote(`Loaded ${data.filename} — ${data.row_count} rows, columns: ${data.columns.join(', ')}`);
+});
+
+sampleBtn.addEventListener('click', async () => {
+  await fetch('/use-sample-dataset', { method: 'POST' });
+  activeTable = 'sales';
+  conversationHistory = [];
+  datasetEyebrow.textContent = 'Sales data';
+  datasetBadge.textContent = '';
+  sampleBtn.style.display = 'none';
+  addSystemNote('Switched back to the sample sales dataset.');
+});
+
+function addSystemNote(text) {
+  welcomeEl.style.display = 'none';
+  const note = document.createElement('div');
+  note.className = 'system-note';
+  note.textContent = text;
+  messagesEl.appendChild(note);
+  scrollToBottom();
+}
 
 // --- Chat rendering --------------------------------------------------------
 
@@ -286,14 +378,25 @@ function scrollToBottom() {
   chatEl.scrollTop = chatEl.scrollHeight;
 }
 
+function formatTime() {
+  return new Date().toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
+}
+
+function checkmarkIcon() {
+  return '<svg class="check" width="14" height="10" viewBox="0 0 16 11" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M1 5.5L4.5 9L11 1.5"/><path d="M5.5 5.5L9 9L15.5 1.5"/></svg>';
+}
+
 function addUserMessage(text) {
   welcomeEl.style.display = 'none';
   const msg = document.createElement('div');
   msg.className = 'msg user';
+  const meta = document.createElement('div');
+  meta.className = 'msg-meta';
+  meta.innerHTML = `<span class="who">You</span>${checkmarkIcon()}<span>${formatTime()}</span>`;
   const bubble = document.createElement('div');
   bubble.className = 'bubble';
   bubble.textContent = text;
-  msg.appendChild(bubble);
+  msg.append(meta, bubble);
   messagesEl.appendChild(msg);
   scrollToBottom();
 }
@@ -301,10 +404,13 @@ function addUserMessage(text) {
 function addAssistantMessage() {
   const msg = document.createElement('div');
   msg.className = 'msg assistant';
+  const meta = document.createElement('div');
+  meta.className = 'msg-meta';
+  meta.innerHTML = `<span class="who">Assistant</span><span>${formatTime()}</span>`;
   const bubble = document.createElement('div');
   bubble.className = 'bubble';
   bubble.innerHTML = '<div class="thinking"><span></span><span></span><span></span></div>';
-  msg.appendChild(bubble);
+  msg.append(meta, bubble);
   messagesEl.appendChild(msg);
   scrollToBottom();
   return bubble;
@@ -313,6 +419,7 @@ function addAssistantMessage() {
 // --- Recording UI ------------------------------------------------------
 
 function beginRecordingUI() {
+  recording = true;
   micBtn.classList.add('recording');
   micIcon.style.display = 'none';
   stopIcon.style.display = '';
@@ -322,12 +429,14 @@ function beginRecordingUI() {
 }
 
 function endRecordingUI() {
+  recording = false;
   micBtn.classList.remove('recording');
   micIcon.style.display = '';
   stopIcon.style.display = 'none';
   recordingBar.classList.remove('active');
   clearInterval(countdownInterval);
   clearTimeout(autoStopTimeout);
+  clearInterval(liveTranscribeTimer);
 }
 
 function startCountdown() {
@@ -341,71 +450,11 @@ function startCountdown() {
   autoStopTimeout = setTimeout(() => stopRecording(), RECORD_SECONDS * 1000);
 }
 
-function stopRecording() {
-  shouldContinueListening = false;
-  if (recognition) recognition.stop(); // -> onend finalizes and sends the message
-  if (mediaRecorder && mediaRecorder.state === 'recording') mediaRecorder.stop();
-}
+// --- Voice input: faster-whisper, periodically re-transcribing the
+// in-progress recording so the caption updates "live" as you talk, then a
+// final transcribe of the complete clip once you stop.
 
-// --- Primary: Web Speech API ---------------------------------------------
-
-function startSpeechRecognition() {
-  finalTranscript = '';
-  textInput.value = ''; // clear stale text so a failed/empty recording can't resend old text
-  shouldContinueListening = true;
-  recognition = new SpeechRecognitionCtor();
-  recognition.continuous = true;
-  recognition.interimResults = true;
-  recognition.lang = 'en-US';
-
-  recognition.onresult = (event) => {
-    let interim = '';
-    for (let i = event.resultIndex; i < event.results.length; i++) {
-      const chunk = event.results[i][0].transcript;
-      if (event.results[i].isFinal) finalTranscript += chunk + ' ';
-      else interim += chunk;
-    }
-    const live = (finalTranscript + interim).trim();
-    liveCaptionEl.textContent = live || 'Say something...';
-    textInput.value = live;
-  };
-
-  let fatalMicError = false;
-
-  recognition.onerror = (event) => {
-    if (event.error === 'not-allowed' || event.error === 'service-not-allowed') {
-      fatalMicError = true;
-      shouldContinueListening = false;
-      endRecordingUI();
-      liveCaptionEl.textContent = '';
-      addAssistantMessage().innerHTML = '<div class="error-box">Couldn\'t access the microphone: permission denied.</div>';
-    }
-    // other errors (e.g. transient 'no-speech') are non-fatal; onend handles restart/finalize
-  };
-
-  recognition.onend = () => {
-    if (shouldContinueListening) {
-      try { recognition.start(); } catch { /* already starting */ }
-      return;
-    }
-    if (fatalMicError) return; // onerror already reported this
-    endRecordingUI();
-    const text = finalTranscript.trim() || textInput.value.trim();
-    textInput.value = '';
-    if (text) sendMessage(text, false);
-  };
-
-  try {
-    recognition.start();
-    beginRecordingUI();
-  } catch {
-    addAssistantMessage().innerHTML = '<div class="error-box">Could not start the microphone.</div>';
-  }
-}
-
-// --- Fallback: record + server-side faster-whisper transcription --------
-
-async function startMediaRecorderFallback() {
+async function startRecording() {
   let stream;
   try {
     stream = await navigator.mediaDevices.getUserMedia({ audio: true });
@@ -414,41 +463,63 @@ async function startMediaRecorderFallback() {
     return;
   }
 
-  liveCaptionEl.textContent = '(live captions need Chrome or Edge — recording still works)';
   recordedChunks = [];
+  lastTranscript = '';
+  textInput.value = ''; // clear stale text so a failed/empty recording can't resend old text
   mediaRecorder = new MediaRecorder(stream);
   mediaRecorder.ondataavailable = (e) => { if (e.data.size > 0) recordedChunks.push(e.data); };
   mediaRecorder.onstop = async () => {
     stream.getTracks().forEach(t => t.stop());
+    clearInterval(liveTranscribeTimer);
+    // If a periodic call is mid-flight right as we stop, wait for it rather
+    // than skipping straight to a (possibly redundant) final transcription.
+    while (transcribing) await new Promise(r => setTimeout(r, 100));
+    const finalText = (await transcribeCurrentRecording(/* isFinal */ true)) || lastTranscript;
     endRecordingUI();
-    await sendRecordingForTranscription(new Blob(recordedChunks, { type: mediaRecorder.mimeType || 'audio/webm' }));
+    if (finalText) sendMessage(finalText, false);
+    else addAssistantMessage().innerHTML = '<div class="error-box">Didn\'t catch any speech, try again.</div>';
   };
-  mediaRecorder.start();
+
+  // timeslice: fires ondataavailable periodically while still recording, so
+  // we have something to re-transcribe for the live caption without waiting
+  // for the whole recording to finish.
+  mediaRecorder.start(LIVE_TRANSCRIBE_INTERVAL_MS);
   beginRecordingUI();
+
+  liveTranscribeTimer = setInterval(() => transcribeCurrentRecording(false), LIVE_TRANSCRIBE_INTERVAL_MS);
 }
 
-async function sendRecordingForTranscription(blob) {
-  const bubble = addAssistantMessage();
-  bubble.innerHTML = '<div class="status-line">Transcribing...</div>';
-  const form = new FormData();
-  const ext = (blob.type.split('/')[1] || 'webm').split(';')[0];
-  form.append('file', blob, `recording.${ext}`);
+function stopRecording() {
+  if (mediaRecorder && mediaRecorder.state === 'recording') mediaRecorder.stop();
+}
 
-  let resp, data;
+async function transcribeCurrentRecording(isFinal) {
+  // Skip overlapping calls, and wait for at least 2 chunks — a lone first
+  // chunk is sometimes not yet a fully decodable container.
+  if (transcribing || recordedChunks.length < 2) return isFinal ? '' : undefined;
+  transcribing = true;
   try {
-    resp = await fetch('/transcribe', { method: 'POST', body: form });
-    data = await resp.json();
-  } catch (err) {
-    bubble.innerHTML = `<div class="error-box">Transcription request failed: ${err}</div>`;
-    return;
-  }
-  if (!resp.ok) {
-    bubble.innerHTML = `<div class="error-box">${(data && data.detail) || 'Transcription failed.'}</div>`;
-    return;
-  }
+    const blob = new Blob(recordedChunks, { type: mediaRecorder.mimeType || 'audio/webm' });
+    const form = new FormData();
+    const ext = (blob.type.split('/')[1] || 'webm').split(';')[0];
+    form.append('file', blob, `recording.${ext}`);
 
-  bubble.parentElement.remove(); // was just a "transcribing..." placeholder — the real turn starts now
-  sendMessage(data.text, false);
+    let resp, data;
+    try {
+      resp = await fetch('/transcribe', { method: 'POST', body: form });
+      data = await resp.json();
+    } catch {
+      return isFinal ? '' : undefined; // transient failure — try again next tick unless this was the final call
+    }
+    if (!resp.ok) return isFinal ? '' : undefined;
+
+    liveCaptionEl.textContent = data.text || 'Say something...';
+    textInput.value = data.text || '';
+    if (data.text) lastTranscript = data.text;
+    return data.text || '';
+  } finally {
+    transcribing = false;
+  }
 }
 
 // --- Query execution -------------------------------------------------------
@@ -470,7 +541,7 @@ async function sendMessage(text, confirm, existingBubble, forUserText) {
     resp = await fetch('/query', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ text: forUserText || text, confirm, history: conversationHistory }),
+      body: JSON.stringify({ text: forUserText || text, confirm, history: conversationHistory, table: activeTable }),
     });
     data = await resp.json();
   } catch (err) {
@@ -504,6 +575,7 @@ function renderConfirm(bubble, data, originalText) {
   const label = document.createElement('span');
   label.textContent = `This will affect ${data.rows.length} row(s). Run it?`;
   const yesBtn = document.createElement('button');
+  yesBtn.className = 'primary';
   yesBtn.textContent = 'Yes, run it';
   yesBtn.addEventListener('click', () => sendMessage(originalText, true, bubble, originalText));
   const noBtn = document.createElement('button');

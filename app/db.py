@@ -1,5 +1,6 @@
 """SQLite access layer: connect, inspect schema, run SQL, load the dataset."""
 import csv
+import re
 import sqlite3
 from pathlib import Path
 from typing import Any
@@ -21,23 +22,28 @@ def get_connection() -> sqlite3.Connection:
     return conn
 
 
-def get_schema() -> str:
+def get_schema(table: str | None = None) -> str:
     """Return a compact text description of every table + its columns.
 
     This is what gets fed into the Ollama fallback prompt so the model
     knows what it's allowed to query, and it's handy for debugging too.
+    Pass `table` to scope it to just one table — used for an uploaded
+    dataset so the prompt isn't cluttered with the unrelated sample schema.
     """
     conn = get_connection()
     try:
-        tables = conn.execute(
-            "SELECT name FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite_%'"
-        ).fetchall()
+        if table:
+            tables = [{"name": table}]
+        else:
+            tables = conn.execute(
+                "SELECT name FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite_%'"
+            ).fetchall()
         lines = []
         for t in tables:
-            table = t["name"]
-            cols = conn.execute(f"PRAGMA table_info({table})").fetchall()
+            tname = t["name"]
+            cols = conn.execute(f"PRAGMA table_info({tname})").fetchall()
             col_desc = ", ".join(f"{c['name']} {c['type']}" for c in cols)
-            lines.append(f"{table}({col_desc})")
+            lines.append(f"{tname}({col_desc})")
         return "\n".join(lines)
     finally:
         conn.close()
@@ -159,3 +165,115 @@ def load_sales_data() -> None:
         conn.commit()
     finally:
         conn.close()
+
+
+UPLOADED_TABLE = "user_data"
+
+
+def _sanitize_identifier(name: str, fallback: str) -> str:
+    cleaned = re.sub(r"\W+", "_", name.strip()).strip("_").lower()
+    if not cleaned or cleaned[0].isdigit():
+        cleaned = f"{fallback}_{cleaned}" if cleaned else fallback
+    return cleaned
+
+
+def _dedupe_columns(columns: list[str]) -> list[str]:
+    seen: dict[str, int] = {}
+    result = []
+    for col in columns:
+        if col not in seen:
+            seen[col] = 0
+            result.append(col)
+        else:
+            seen[col] += 1
+            result.append(f"{col}_{seen[col]}")
+    return result
+
+
+def _infer_column_types(rows: list[dict], columns: list[str]) -> dict[str, str]:
+    types = {}
+    for col in columns:
+        values = [r[col].strip() for r in rows[:500] if (r.get(col) or "").strip()]
+        if not values:
+            types[col] = "TEXT"
+            continue
+        if all(re.fullmatch(r"-?\d+", v) for v in values):
+            types[col] = "INTEGER"
+        elif all(re.fullmatch(r"-?\d+\.\d+", v) for v in values):
+            types[col] = "REAL"
+        else:
+            types[col] = "TEXT"
+    return types
+
+
+def import_uploaded_csv(csv_path: Path, original_filename: str) -> dict:
+    """Load an arbitrary user-provided CSV into UPLOADED_TABLE, replacing
+    whatever was there before (only one uploaded dataset active at a time).
+
+    Column names are sanitized to valid SQL identifiers and types are
+    inferred by sampling — this table has no hand-written rule-based parser
+    support (unlike `sales`), so it's only ever queried via the Ollama
+    fallback, which reads the schema straight from the DB.
+    """
+    with csv_path.open(newline="", encoding="utf-8-sig") as f:
+        reader = csv.DictReader(f)
+        raw_columns = reader.fieldnames or []
+        if not raw_columns:
+            raise ValueError("CSV has no header row")
+        rows = list(reader)
+
+    columns = _dedupe_columns([_sanitize_identifier(c, f"col{i}") for i, c in enumerate(raw_columns)])
+    col_map = dict(zip(raw_columns, columns))
+    typed_rows = [{col_map[k]: v for k, v in row.items() if k in col_map} for row in rows]
+    col_types = _infer_column_types(typed_rows, columns)
+
+    conn = get_connection()
+    try:
+        conn.execute(f"DROP TABLE IF EXISTS {UPLOADED_TABLE}")
+        cols_sql = ",\n                ".join(f"{c} {col_types[c]}" for c in columns)
+        conn.execute(
+            f"""
+            CREATE TABLE {UPLOADED_TABLE} (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                {cols_sql}
+            )
+            """
+        )
+
+        placeholders = ", ".join("?" for _ in columns)
+        insert_sql = f"INSERT INTO {UPLOADED_TABLE} ({', '.join(columns)}) VALUES ({placeholders})"
+
+        def coerce(col: str, val: str):
+            val = (val or "").strip()
+            if not val:
+                return None
+            if col_types[col] == "INTEGER":
+                try:
+                    return int(val)
+                except ValueError:
+                    return None
+            if col_types[col] == "REAL":
+                try:
+                    return float(val)
+                except ValueError:
+                    return None
+            return val
+
+        batch = []
+        for row in typed_rows:
+            batch.append(tuple(coerce(c, row.get(c, "")) for c in columns))
+            if len(batch) >= 2000:
+                conn.executemany(insert_sql, batch)
+                batch.clear()
+        if batch:
+            conn.executemany(insert_sql, batch)
+        conn.commit()
+    finally:
+        conn.close()
+
+    return {
+        "table": UPLOADED_TABLE,
+        "filename": original_filename,
+        "columns": columns,
+        "row_count": len(typed_rows),
+    }

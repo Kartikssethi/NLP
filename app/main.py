@@ -12,6 +12,8 @@ Endpoints:
                               mic) -> {"text": "..."} via faster-whisper
     POST /voice-query        records RECORD_SECONDS from the server's own mic,
                               transcribes it, then behaves like /query
+    POST /upload-dataset      upload a CSV -> load it as the active dataset
+    POST /use-sample-dataset   switch back to the built-in sales data
     GET  /chart               last chart rendered as a standalone HTML page
 """
 import tempfile
@@ -21,8 +23,8 @@ from fastapi import FastAPI, HTTPException, UploadFile
 from fastapi.responses import HTMLResponse
 from pydantic import BaseModel
 
-from app.db import execute_sql, get_schema, load_sales_data
-from app.nl2sql import OllamaUnavailable, parse
+from app.db import execute_sql, get_schema, import_uploaded_csv, load_sales_data
+from app.nl2sql import TABLE, OllamaUnavailable, parse
 from app.viz import build_chart, wrap_html
 
 app = FastAPI(title="Voice-to-SQL")
@@ -45,6 +47,9 @@ class QueryIn(BaseModel):
     # like "now break that down by region" can be resolved against what was
     # already asked/run. Only used by the Ollama fallback — see nl2sql.py.
     history: list[HistoryTurn] = []
+    # Which table to query — "sales" (default) or "user_data" after a CSV
+    # upload. See app/db.py::UPLOADED_TABLE.
+    table: str = TABLE
 
 
 class QueryOut(BaseModel):
@@ -78,10 +83,12 @@ def schema() -> dict:
     return {"schema": get_schema()}
 
 
-def _run_query(text: str, confirm: bool, history: list[HistoryTurn] | None = None) -> QueryOut:
+def _run_query(
+    text: str, confirm: bool, history: list[HistoryTurn] | None = None, table: str = TABLE
+) -> QueryOut:
     history_dicts = [h.model_dump() for h in history] if history else None
     try:
-        parsed = parse(text, history=history_dicts)
+        parsed = parse(text, history=history_dicts, table=table)
     except OllamaUnavailable as exc:
         raise HTTPException(status_code=502, detail=str(exc))
 
@@ -127,7 +134,7 @@ def _run_query(text: str, confirm: bool, history: list[HistoryTurn] | None = Non
 
 @app.post("/query", response_model=QueryOut)
 def query(payload: QueryIn) -> QueryOut:
-    return _run_query(payload.text, payload.confirm, payload.history)
+    return _run_query(payload.text, payload.confirm, payload.history, payload.table)
 
 
 @app.post("/voice-query", response_model=QueryOut)
@@ -157,6 +164,35 @@ async def transcribe(file: UploadFile) -> dict:
     if not text:
         raise HTTPException(status_code=400, detail="Didn't catch any speech.")
     return {"text": text}
+
+
+@app.post("/upload-dataset")
+async def upload_dataset(file: UploadFile) -> dict:
+    """Load a user-provided CSV as the active dataset (replaces any
+    previously uploaded one). Queries against it always go through the
+    Ollama fallback — see nl2sql.parse()'s `table` handling."""
+    if not (file.filename or "").lower().endswith(".csv"):
+        raise HTTPException(status_code=400, detail="Please upload a .csv file.")
+
+    with tempfile.NamedTemporaryFile(suffix=".csv", delete=False) as tmp:
+        tmp.write(await file.read())
+        tmp_path = Path(tmp.name)
+    try:
+        info = import_uploaded_csv(tmp_path, file.filename or "dataset.csv")
+    except Exception as exc:  # noqa: BLE001 - surface a clean message to the caller
+        raise HTTPException(status_code=400, detail=f"Couldn't load that CSV: {exc}")
+    finally:
+        tmp_path.unlink(missing_ok=True)
+
+    return info
+
+
+@app.post("/use-sample-dataset")
+def use_sample_dataset() -> dict:
+    """No-op marker endpoint: the frontend just needs to know the default
+    table name to switch back to. Kept as a real endpoint (rather than a
+    frontend-only constant) so schema/health checks can hit it too."""
+    return {"table": TABLE}
 
 
 @app.get("/chart", response_class=HTMLResponse)
