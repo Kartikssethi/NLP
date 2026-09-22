@@ -644,6 +644,18 @@ function renderConfirm(bubble, data, originalText) {
 
 function renderResult(bubble, data) {
   bubble.innerHTML = '';
+
+  if (data.is_diagram) {
+    // Explanatory diagram (flowchart/ER/sequence diagram of the dataset's
+    // structure) — no SQL, no rows, just the Mermaid diagram itself.
+    const div = document.createElement('div');
+    div.className = 'mermaid';
+    div.textContent = data.chart;
+    bubble.appendChild(div);
+    mermaid.run({ nodes: [div] }).then(scrollToBottom);
+    return;
+  }
+
   bubble.appendChild(sqlBlock(data));
 
   if (data.rows.length === 1 && data.columns.length === 1) {

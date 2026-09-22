@@ -24,7 +24,7 @@ from fastapi.responses import HTMLResponse
 from pydantic import BaseModel
 
 from app.db import execute_sql, get_schema, import_uploaded_csv, load_sales_data
-from app.nl2sql import TABLE, OllamaUnavailable, parse
+from app.nl2sql import TABLE, OllamaUnavailable, generate_diagram, parse, wants_diagram
 from app.viz import build_chart, wrap_html
 
 app = FastAPI(title="Voice-to-SQL")
@@ -61,6 +61,10 @@ class QueryOut(BaseModel):
     chart: str
     is_mermaid: bool
     requires_confirmation: bool = False
+    # True for an explanatory diagram (flowchart/ER/sequence diagram
+    # describing the dataset's structure) rather than a data query result —
+    # `sql`/`columns`/`rows` are meaningless in that case.
+    is_diagram: bool = False
 
 
 @app.on_event("startup")
@@ -86,6 +90,25 @@ def schema() -> dict:
 def _run_query(
     text: str, confirm: bool, history: list[HistoryTurn] | None = None, table: str = TABLE
 ) -> QueryOut:
+    if wants_diagram(text):
+        # A request like "explain this dataset with a flowchart" wants the
+        # *structure* described, not a data value aggregated — never a SQL
+        # question, so it skips parse()/execute_sql entirely.
+        try:
+            diagram = generate_diagram(text, table=table)
+        except OllamaUnavailable as exc:
+            raise HTTPException(status_code=502, detail=str(exc))
+        return QueryOut(
+            text=text,
+            sql="",
+            source="ollama",
+            columns=[],
+            rows=[],
+            chart=diagram,
+            is_mermaid=True,
+            is_diagram=True,
+        )
+
     history_dicts = [h.model_dump() for h in history] if history else None
     try:
         parsed = parse(text, history=history_dicts, table=table)

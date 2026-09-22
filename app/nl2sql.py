@@ -427,6 +427,58 @@ def ollama_fallback(
     return ParseResult(sql, "ollama", is_write=is_write)
 
 
+# Explanatory diagram requests ("explain this dataset with a flowchart",
+# "sequence diagram of...", "ER diagram") are a fundamentally different ask
+# from a data query: they want a description of the dataset's *structure*,
+# not an aggregation of its *values*. Forcing that through the SQL pipeline
+# produces something technically valid but meaningless (e.g. a random
+# GROUP BY rendered as a one-bar chart). Detected separately, before SQL
+# parsing/generation ever runs — see main.py::_run_query.
+_DIAGRAM_WORDS = re.compile(
+    r"\b(flowchart|flow chart|sequence diagram|mind ?map|er diagram|"
+    r"entity relationship|class diagram|diagram)\b",
+    re.I,
+)
+
+
+def wants_diagram(text: str) -> bool:
+    return bool(_DIAGRAM_WORDS.search(text))
+
+
+def generate_diagram(text: str, table: str | None = None) -> str:
+    """Ask Ollama for a Mermaid diagram (not SQL) describing the dataset's
+    structure, per an explicit flowchart/sequence-diagram/etc. request."""
+    import ollama  # imported lazily so the app still runs without it installed/running
+
+    schema = get_schema(table)
+    prompt = (
+        "You produce Mermaid diagrams only — no SQL, no explanation outside "
+        "the diagram itself.\n"
+        f"Database schema:\n{schema}\n\n"
+        f"Request: {text}\n\n"
+        "Pick whichever Mermaid diagram type actually fits the request "
+        "(flowchart TD, erDiagram, sequenceDiagram, mindmap, classDiagram, "
+        "etc.) and describe the dataset's structure — its tables, columns, "
+        "and how they relate — not example data values. Output ONLY the "
+        "Mermaid source, starting with the diagram-type keyword. No markdown "
+        "fences, no commentary before or after."
+    )
+    client = ollama.Client(host=OLLAMA_HOST)
+    try:
+        response = client.chat(
+            model=OLLAMA_MODEL,
+            messages=[{"role": "user", "content": prompt}],
+        )
+    except Exception as exc:  # noqa: BLE001 - connection errors, model errors, etc.
+        raise OllamaUnavailable(
+            f"Couldn't get a diagram from Ollama model {OLLAMA_MODEL!r} at {OLLAMA_HOST}: {exc}"
+        ) from exc
+
+    diagram = response["message"]["content"].strip()
+    diagram = re.sub(r"^```(?:mermaid)?\s*|\s*```$", "", diagram, flags=re.I | re.M).strip()
+    return diagram
+
+
 def parse(
     text: str, history: list[dict[str, str]] | None = None, table: str | None = None
 ) -> ParseResult:
