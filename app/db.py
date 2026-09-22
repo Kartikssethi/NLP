@@ -177,8 +177,11 @@ def _sanitize_identifier(name: str, fallback: str) -> str:
     return cleaned
 
 
-def _dedupe_columns(columns: list[str]) -> list[str]:
-    seen: dict[str, int] = {}
+def _dedupe_columns(columns: list[str], reserved: set[str] = frozenset()) -> list[str]:
+    # `reserved` seeds the "already seen" set so a column colliding with a
+    # name we use ourselves (e.g. the "id" primary key every uploaded table
+    # gets) is renamed instead of causing a "duplicate column name" error.
+    seen: dict[str, int] = {name: 0 for name in reserved}
     result = []
     for col in columns:
         if col not in seen:
@@ -222,7 +225,10 @@ def import_uploaded_csv(csv_path: Path, original_filename: str) -> dict:
             raise ValueError("CSV has no header row")
         rows = list(reader)
 
-    columns = _dedupe_columns([_sanitize_identifier(c, f"col{i}") for i, c in enumerate(raw_columns)])
+    columns = _dedupe_columns(
+        [_sanitize_identifier(c, f"col{i}") for i, c in enumerate(raw_columns)],
+        reserved={"id"},
+    )
     col_map = dict(zip(raw_columns, columns))
     typed_rows = [{col_map[k]: v for k, v in row.items() if k in col_map} for row in rows]
     col_types = _infer_column_types(typed_rows, columns)
