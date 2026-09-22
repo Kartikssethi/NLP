@@ -33,9 +33,18 @@ _INDEX_HTML = (Path(__file__).parent / "static" / "index.html").read_text()
 _last_chart: dict[str, str] = {"mermaid": "", "is_mermaid": False}
 
 
+class HistoryTurn(BaseModel):
+    text: str
+    sql: str
+
+
 class QueryIn(BaseModel):
     text: str
     confirm: bool = False  # must be true to actually run a DELETE
+    # Prior turns in this conversation (most recent last), so a follow-up
+    # like "now break that down by region" can be resolved against what was
+    # already asked/run. Only used by the Ollama fallback — see nl2sql.py.
+    history: list[HistoryTurn] = []
 
 
 class QueryOut(BaseModel):
@@ -69,9 +78,10 @@ def schema() -> dict:
     return {"schema": get_schema()}
 
 
-def _run_query(text: str, confirm: bool) -> QueryOut:
+def _run_query(text: str, confirm: bool, history: list[HistoryTurn] | None = None) -> QueryOut:
+    history_dicts = [h.model_dump() for h in history] if history else None
     try:
-        parsed = parse(text)
+        parsed = parse(text, history=history_dicts)
     except OllamaUnavailable as exc:
         raise HTTPException(status_code=502, detail=str(exc))
 
@@ -99,8 +109,8 @@ def _run_query(text: str, confirm: bool) -> QueryOut:
     except Exception as exc:  # noqa: BLE001 - surface the DB error to the caller
         raise HTTPException(status_code=400, detail=f"SQL error: {exc}\nSQL was: {parsed.sql}")
 
-    is_mermaid = len(columns) == 2 and len(rows) > 1
     chart = build_chart(columns, rows)
+    is_mermaid = chart.startswith("xychart-beta")
     _last_chart["mermaid"] = chart
     _last_chart["is_mermaid"] = is_mermaid
 
@@ -117,7 +127,7 @@ def _run_query(text: str, confirm: bool) -> QueryOut:
 
 @app.post("/query", response_model=QueryOut)
 def query(payload: QueryIn) -> QueryOut:
-    return _run_query(payload.text, payload.confirm)
+    return _run_query(payload.text, payload.confirm, payload.history)
 
 
 @app.post("/voice-query", response_model=QueryOut)

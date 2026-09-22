@@ -265,8 +265,13 @@ def rule_based_parse(text: str) -> ParseResult | None:
     # at the start of the utterance, not just "contains the word somewhere",
     # so a question like "can I get a graph on..." (which isn't actually a
     # show-me-rows request) falls through to the Ollama fallback instead of
-    # being misread as one.
-    if re.match(r"(?:please\s+)?(show|list|find|get|display)\b", t):
+    # being misread as one. Also skipped when the phrase asks for a chart or
+    # a superlative ("worst selling", "most popular") — this rule only knows
+    # how to dump filtered raw rows, not compute an aggregate/ranking, so
+    # "show me a chart of the worst selling product" needs Ollama too, even
+    # though it starts with "show".
+    wants_aggregate = re.search(r"\b(chart|graph|plot|visuali[sz]e|best|worst|most|least)\b", t)
+    if not wants_aggregate and re.match(r"(?:please\s+)?(show|list|find|get|display)\b", t):
         where = _extract_filters(t)
         sql = f"SELECT * FROM {TABLE}"
         if where:
@@ -281,22 +286,38 @@ class OllamaUnavailable(Exception):
     """Raised when the Ollama fallback can't be reached or fails to answer."""
 
 
-def ollama_fallback(text: str) -> ParseResult:
+def ollama_fallback(text: str, history: list[dict[str, str]] | None = None) -> ParseResult:
     """Ask an Ollama model to generate SQL when the rules don't match.
 
     Requires `ollama serve` running (locally, or OLLAMA_HOST pointed at a
     reachable instance) and OLLAMA_MODEL available there — either pulled
     locally (`ollama pull <model>`) or, for a `*-cloud` model, an Ollama
     account with usage available for it.
+
+    `history` is prior turns in this conversation, oldest first, each a
+    {"text": ..., "sql": ...} dict — lets a follow-up like "now break that
+    down by region" resolve "that" against what was already asked/run.
     """
     import ollama  # imported lazily so the app still runs without it installed/running
 
     schema = get_schema()
+    history_block = ""
+    if history:
+        turns = "\n".join(f"Q: {h['text']}\nSQL: {h['sql']}" for h in history[-5:])
+        history_block = (
+            "Earlier turns in this conversation (most recent last) — use them "
+            "to resolve references like \"that\", \"it\", \"those\", or a "
+            f"follow-up refinement of a prior question:\n{turns}\n\n"
+        )
     prompt = (
         "You are a SQL generator for a SQLite database.\n"
+        f"{history_block}"
         f"Schema:\n{schema}\n\n"
         f"Write ONE SQLite SQL statement (no explanation, no markdown "
-        f"fences, no comments) that does this: {text}"
+        f"fences, no comments) that does this: {text}\n"
+        "If this asks for a chart/graph/plot, prefer a GROUP BY query that "
+        "returns multiple comparable rows (e.g. one per category) rather "
+        "than a single row, unless a specific top-N count was requested."
     )
     client = ollama.Client(host=OLLAMA_HOST)
     try:
@@ -316,8 +337,11 @@ def ollama_fallback(text: str) -> ParseResult:
     return ParseResult(sql, "ollama", is_write=is_write)
 
 
-def parse(text: str) -> ParseResult:
+def parse(text: str, history: list[dict[str, str]] | None = None) -> ParseResult:
+    # The rule-based parser has no conversational memory — it's a fast path
+    # for standalone phrasings. A follow-up ("now just for laptops") won't
+    # match any of its patterns anyway, so it naturally falls through here.
     result = rule_based_parse(text)
     if result is not None:
         return result
-    return ollama_fallback(text)
+    return ollama_fallback(text, history=history)

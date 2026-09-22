@@ -19,10 +19,10 @@ from app.nl2sql import OllamaUnavailable, parse
 from app.viz import build_chart
 
 
-def run_once(text: str) -> None:
+def run_once(text: str, history: list[dict[str, str]] | None = None) -> None:
     print(f"\nYou said: {text!r}")
     try:
-        parsed = parse(text)
+        parsed = parse(text, history=history)
     except OllamaUnavailable as exc:
         print(f"Couldn't turn that into SQL: {exc}")
         return
@@ -61,6 +61,10 @@ def run_once(text: str) -> None:
     print(chart)
     print("---")
 
+    if history is not None:
+        history.append({"text": text, "sql": parsed.sql})
+        del history[:-5]  # keep only the last 5 turns
+
 
 def main() -> None:
     ap = argparse.ArgumentParser(description="Voice-to-SQL CLI")
@@ -74,6 +78,8 @@ def main() -> None:
     if args.text:
         run_once(args.text)
         return
+
+    history: list[dict[str, str]] = []
 
     if args.voice:
         from app.config import RECORD_SECONDS
@@ -89,10 +95,10 @@ def main() -> None:
             if not text:
                 print("Didn't catch any speech, try again.")
                 continue
-            run_once(text)
+            run_once(text, history)
         return
 
-    print("Type a query and press Enter (Ctrl+C to quit).")
+    print("Type a query and press Enter (Ctrl+C to quit). Follow-up questions work — I remember the last few turns.")
     while True:
         try:
             text = input("\n> ").strip()
@@ -101,7 +107,7 @@ def main() -> None:
             return
         if not text:
             continue
-        run_once(text)
+        run_once(text, history)
 
 
 if __name__ == "__main__":

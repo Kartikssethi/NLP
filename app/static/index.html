@@ -59,6 +59,14 @@
   }
   #examples code:hover { background: #d8c393; }
 
+  #historyBar {
+    font-size: 0.8rem; color: var(--ink-soft); margin-bottom: 14px;
+    display: flex; align-items: baseline; justify-content: space-between; gap: 12px;
+  }
+  #historyList { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  #historyBar a { color: var(--gold); text-decoration: none; flex-shrink: 0; }
+  #historyBar a:hover { text-decoration: underline; }
+
   #queryForm { display: flex; gap: 8px; }
   #text {
     flex: 1; padding: 13px 16px; font-size: 1rem; font-family: "Inter", sans-serif;
@@ -140,6 +148,10 @@
     <code>average price of samsung phones</code> ·
     <code>delete 2 laptops in central region</code>
   </div>
+  <div id="historyBar" style="display:none">
+    <span id="historyList"></span>
+    <a href="#" id="clearHistory">Start over</a>
+  </div>
   <form id="queryForm">
     <input id="text" type="text" placeholder="Ask something about the sales data..." autocomplete="off" autofocus />
     <button type="button" id="micBtn" title="Record a question">
@@ -173,6 +185,9 @@ mermaid.initialize({ startOnLoad: false });
 const form = document.getElementById('queryForm');
 const textInput = document.getElementById('text');
 const statusEl = document.getElementById('status');
+const historyBar = document.getElementById('historyBar');
+const historyListEl = document.getElementById('historyList');
+const clearHistoryLink = document.getElementById('clearHistory');
 const sqlEl = document.getElementById('sql');
 const resultsEl = document.getElementById('results');
 const confirmBar = document.getElementById('confirmBar');
@@ -191,6 +206,12 @@ const SpeechRecognitionCtor = window.SpeechRecognition || window.webkitSpeechRec
 let pendingText = null;
 let countdownInterval = null;
 let autoStopTimeout = null;
+
+// Conversation memory for this page session — lets a follow-up like "now
+// break that down by region" resolve "that" against what was already asked.
+// Sent to the server with every /query call; only the Ollama fallback uses
+// it (see nl2sql.py). Cleared on page reload or via the "Start over" link.
+let conversationHistory = [];
 
 // --- Speech-to-text primary path: the browser's own free recognizer ------
 // (Chrome/Edge). Gives a live transcript as you talk, with no server round
@@ -215,6 +236,22 @@ form.addEventListener('submit', (e) => {
 
 confirmBtn.addEventListener('click', () => { if (pendingText) runQuery(pendingText, true); });
 cancelBtn.addEventListener('click', () => { confirmBar.style.display = 'none'; pendingText = null; statusEl.textContent = 'Cancelled.'; });
+
+clearHistoryLink.addEventListener('click', (e) => {
+  e.preventDefault();
+  conversationHistory = [];
+  renderHistory();
+  statusEl.textContent = 'Conversation cleared — starting fresh.';
+});
+
+function renderHistory() {
+  if (!conversationHistory.length) {
+    historyBar.style.display = 'none';
+    return;
+  }
+  historyBar.style.display = 'flex';
+  historyListEl.textContent = 'Continuing from: ' + conversationHistory.map(h => h.text).join(' → ');
+}
 
 micBtn.addEventListener('click', () => {
   const isRecording = (recognition && shouldContinueListening) || (mediaRecorder && mediaRecorder.state === 'recording');
@@ -383,7 +420,7 @@ async function runQuery(text, confirm) {
     resp = await fetch('/query', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ text, confirm }),
+      body: JSON.stringify({ text, confirm, history: conversationHistory }),
     });
     data = await resp.json();
   } catch (err) {
@@ -412,6 +449,10 @@ async function runQuery(text, confirm) {
   pendingText = null;
   statusEl.textContent = `${data.rows.length} row(s)`;
   renderResult(data);
+
+  conversationHistory.push({ text, sql: data.sql });
+  conversationHistory = conversationHistory.slice(-5);
+  renderHistory();
 }
 
 function renderResult(data) {
