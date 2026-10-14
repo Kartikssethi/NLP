@@ -57,11 +57,70 @@ source .venv/bin/activate
 uvicorn app.main:app --reload
 ```
 
-- `POST /query` — `{"text": "top 5 brands by quantity sold"}` → SQL + results + chart. For a DELETE utterance, returns a preview (`requires_confirmation: true`) unless you also pass `"confirm": true`.
+- `POST /query` — `{"text": "top 5 brands by quantity sold"}` (optionally `"tables": ["orders", "customers"]`, and `"drill": {"column", "value"}` for a clicked chart bar; see below) → SQL + results + chart. For a DELETE utterance, returns a preview (`requires_confirmation: true`) unless you also pass `"confirm": true`.
 - `POST /voice-query` — records 30s from the server's mic, transcribes, then same as `/query`
+- `POST /upload-dataset` — upload a CSV or Excel (`.xlsx`) file. A CSV becomes its own table named after the file (`customers.csv` → `customers`); a workbook becomes one table per non-empty sheet (`shop.xlsx` with sheets Customers/Orders → `shop_customers`, `shop_orders`). Upload as many as you like — re-uploading a name replaces that table.
+- `GET /datasets`, `DELETE /datasets/{table}` — list / remove uploaded tables
+- `POST /suggest-questions` — `{"tables": [...]}` → starter questions generated from those tables' schema
+- `POST /summarize` — LLM-written answer sentence for result shapes `/query` doesn't summarize itself
+- `POST /run-sql` — run SQL you edited by hand (read-only: SELECT/WITH only, and SQLite itself refuses writes)
+- `GET /er-diagram?tables=a,b` — Mermaid ER diagram of tables and the links detected between them
+- `POST /transcribe?multilingual=true&to_english=true` — Hindi/Hinglish speech → English question
 - `GET /chart` — the last chart as a standalone HTML page (open in a browser)
 - `GET /schema` — current DB schema
 - `GET /health` — liveness check
+
+**Joining your own files**: in the web UI, click *Upload datasets* and pick
+any number of CSV or Excel files. Each shows up as a chip under the chat; click chips
+to choose which tables a question runs against (the built-in `sales` table
+can be mixed in too). With more than one selected, just ask across them —
+"total revenue per customer city", "combine orders and orders_extra and count
+them" — and the model writes the JOIN / UNION ALL. It's given each table's
+schema, sample values, and detected relationships (shared column names,
+`<x>_id` → `<x>.id`, identical column sets) to pick join keys from. Queries
+over uploaded tables always go through Ollama (the rule-based parser only
+knows `sales`), and any query is stopped after 15 seconds so a missing join
+condition can't hang the server.
+
+**Answers, charts and voice**: every result opens with a one-sentence answer
+("Delhi has the highest total revenue at 2,720, about 36% of the total.").
+For the common shapes it is computed straight from the rows in `app/summary.py`
+(never LLM-written, so the numbers can't be invented); other shapes ask the
+model via `/summarize`. A 2-column label + number result can be shown as a
+**Bar, Line or Pie** chart — the switcher appears when more than one fits, and
+the first view follows the wording ("share of…" → pie, "trend" → line).
+*Listen* reads an answer aloud with the browser's speech synthesis, *Voice
+replies* reads every answer, and answers to questions you *speak* are always
+read. Starter questions under the chat box are generated from the selected
+tables (fixed ones for the sample data).
+
+**More things the web UI does**:
+
+- **Hindi / Hinglish voice** — the *Voice* toggle switches the mic to Hindi or
+  Hinglish. Whisper (`small`, a one-time ~460 MB download; set
+  `NLP_WHISPER_MULTILINGUAL_MODEL` to change) transcribes in the language
+  spoken and the LLM rewrites it as an English question using the table schema
+  to repair mishearings ("branches" → "brands"). The live caption shows what
+  was heard; the chat shows both. Typed Hinglish works too.
+- **Click a bar or pie slice** to break that value down ("Delhi" → Delhi by
+  product); the previous query is narrowed and regrouped by another column.
+- **Insight pills** under the answer ("Units fell 38% in 2024-04 compared with
+  2024-03") are found by arithmetic, never by the model. Data usually starts
+  and stops mid-period, so incomplete first/last periods are detected, left out
+  of comparisons and forecasts, and called out.
+- **Forecast** — "predict the next 3 months of sales" fits a straight line to the
+  monthly series and draws it dashed. It says how well the line fits.
+- **Data health card** after each upload (duplicate rows, empty cells per
+  column, distinct counts) with one-click cleaning suggestions, plus a diagram of
+  how your files connect.
+- **Cleaning by command**, on uploaded tables only (never the sample data):
+  "remove duplicate rows", "fill empty price with the average / median / 0 /
+  Unknown", "remove rows where city is missing", "rename column cust to
+  customer", "drop column notes". Each shows exactly what it will change and
+  waits for confirmation. It edits the loaded copy, not your original file.
+- **Pin** results to build a dashboard (saved in this browser) and **Report**
+  to print either the dashboard or the whole chat — *Print / Save as PDF*.
+- **Edit SQL** on any result to tweak the query and re-run it (read-only).
 
 **CLI**:
 
@@ -95,7 +154,7 @@ app/
   cli.py     terminal UI (voice loop or --text)
   nl2sql.py  rule-based parser + Ollama fallback
   stt.py     mic recording + faster-whisper transcription
-  db.py      SQLite connection, schema introspection, CSV -> sales table load
+  db.py      SQLite connection, schema/join-hint introspection, sales + uploaded-CSV table loading
   viz.py     query results -> Mermaid chart definition
 data/
   nlp.db     SQLite database (gitignored; rebuilt automatically from the CSV)
@@ -111,5 +170,8 @@ mobile_sales_data.csv   the source dataset
 - `customer_location` (25k+ nearly-unique fake city names) and
   `product_spec` (random filler text) are stored but not treated as
   filterable dimensions — too high-cardinality to be useful for NL filters.
+- Join keys for uploaded files are the model's best inference from column
+  names and sample values; a CSV with cryptic column names may join wrongly,
+  so check the SQL shown with each answer.
 - The Ollama fallback trusts the model's SQL output as-is; fine for a class
   demo, but don't point this at a database you care about.

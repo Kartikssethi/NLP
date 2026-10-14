@@ -56,6 +56,42 @@ mermaid-py / raw Mermaid syntax for charts.
   `KNOWN_RAM`/`KNOWN_ROM` are the literal values it matches against — if the
   dataset changes, update those sets (and `DIMENSION_WORDS`/
   `COLUMN_ALIASES` for group-by/aggregate phrasings) to match.
+- **Uploaded datasets**: each uploaded CSV becomes its own table named after
+  the file (`app/db.py::import_uploaded_csv`); there is deliberately no
+  synthetic `id` column, so a CSV's own `id` stays usable as a join key. The
+  client sends `tables: [...]` with every `/query`; `main.py::_validated_tables`
+  checks those names against the real DB before they reach any SQL — keep
+  that check, since names end up in PRAGMA/SQL strings. Anything but
+  `["sales"]` skips the rule engine and goes to Ollama with the join rules +
+  relationship hints (`get_join_hints`). `execute_sql` has a 15s timeout
+  (`QUERY_TIMEOUT_S`) as a guard against accidental cross joins.
+- **Answer line** (`app/summary.py`) is deliberately computed from the rows,
+  not LLM-written — a model will occasionally invent or mis-round a figure,
+  and a wrong number in the headline sentence is worse than none. Don't
+  replace it with an LLM call; extend the shapes it covers instead (anything
+  it returns `None` for falls back to `/summarize`). "Share of the total" is
+  skipped for AVG/MIN/MAX and already-ratio columns on purpose.
+- **Charts**: `viz.chart_options()` is the single source for bar/line/pie
+  Mermaid text; the UI only switches between what the server sends. Bars are
+  pinned to a zero baseline — keep that, a truncated bar axis misleads.
+- The Ollama sales prompt's `_build_query_plan` is keyword-based and can
+  mislead (it once forced `group_by: product` on "trend of the product
+  sales"); trend phrasing is special-cased to win. If a plan hint causes a
+  wrong query, fix the hint, not the model.
+- **Cleaning commands** (`app/clean.py`) are rule-matched on purpose — they
+  change data, so they must do exactly what was said, preview first, ask for
+  confirmation, and only ever touch uploaded tables, never `sales`. Model-written
+  writes follow the same rule: `nl2sql.ollama_fallback` only lets a DELETE through
+  (with a preview) and raises `UnsafeSQL` for any other write. `/run-sql` is
+  read-only twice over (SELECT/WITH check + `PRAGMA query_only`).
+- **Insights / forecast** (`app/insights.py`, `app/forecast.py`) are arithmetic, not
+  LLM output, for the same reason as the answer line. Both use
+  `summary.partial_edges()` to drop incomplete first/last periods — without that
+  the sample data's partial final months produce fake "-90% crash" insights and
+  a forecast that leaps from a half-empty month. Keep that when changing them.
+- **Hindi/Hinglish voice**: Whisper's own translate task garbles Hindi, so the
+  pipeline is transcribe-in-language, then `nl2sql.translate_question` (LLM + schema).
+  Don't switch back to `task="translate"`.
 - **DELETE safety**: never make a recognized delete/remove utterance execute
   without a confirmation step (CLI: prints affected rows, requires typed
   `yes`; API: returns a preview + `requires_confirmation: true` unless the

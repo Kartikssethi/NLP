@@ -13,13 +13,15 @@ Schema: sales(product, brand, product_code, product_spec, price,
 inward_date, dispatch_date, quantity_sold, customer_name,
 customer_location, region, core_spec, processor_spec, ram, rom, ssd)
 """
+import json
 import re
 from dataclasses import dataclass
 
 from app.config import OLLAMA_MODEL, OLLAMA_HOST
-from app.db import get_schema
+from app.db import SALES_TABLE, get_join_hints, get_schema
+from app.forecast import wants_forecast
 
-TABLE = "sales"
+TABLE = SALES_TABLE
 COLUMNS = [
     "id",
     "product",
@@ -370,6 +372,17 @@ class OllamaUnavailable(Exception):
     """Raised when the Ollama fallback can't be reached or fails to answer."""
 
 
+class UnsafeSQL(Exception):
+    """The model wrote a data-changing statement that can't be previewed."""
+
+
+_TREND_WORDS = re.compile(
+    r"\b(trend|trends|over time|timeline|monthly|weekly|daily|yearly|per month|"
+    r"each month|by month|per year|by year|per day|by day|predict|prediction|forecast|"
+    r"projection|extrapolate|next \d+ (?:day|week|month|year)s?)\b"
+)
+
+
 def _build_query_plan(text: str) -> str | None:
     """A lightweight structured read of the question — metric / group-by /
     filters / sort direction / limit — built from the same extraction
@@ -390,6 +403,15 @@ def _build_query_plan(text: str) -> str | None:
     filters = _extract_filters(t)
     limit_match = re.search(r"top\s+(\d+)", t)
 
+    # "trend of the product sales" mentions a dimension word (product) but the
+    # question is about change over time — a dimension guessed from keywords
+    # must not override that.
+    if _TREND_WORDS.search(t):
+        dimension = (
+            "time — one row per month, strftime('%Y-%m', dispatch_date) "
+            "(or inward_date if the question is about stock received)"
+        )
+
     if not any([metric, dimension, direction, filters, limit_match]):
         return None
 
@@ -402,8 +424,42 @@ def _build_query_plan(text: str) -> str | None:
     )
 
 
+def _is_sales_only(tables: list[str] | None) -> bool:
+    return not tables or set(tables) == {TABLE}
+
+
+_MULTI_TABLE_RULES = (
+    "MULTI-TABLE RULES:\n"
+    "1. Use only the tables and columns listed in the schema above — never "
+    "invent one.\n"
+    "2. Qualify every column with its table name or alias (orders.region, "
+    "not region) whenever more than one table is in the query.\n"
+    "3. Join tables on columns that hold the same kind of value — use the "
+    "relationship hints and the example values shown. Every JOIN needs an "
+    "explicit ON condition; never write a CROSS JOIN or a comma join without "
+    "a WHERE condition linking the tables.\n"
+    "4. Use INNER JOIN by default; use LEFT JOIN only when the question asks "
+    "to keep rows that have no match.\n"
+    "5. If the question asks to merge/combine/stack/append tables with the "
+    "same columns, use UNION ALL. If it asks to merge/combine tables on a "
+    "key, use a JOIN.\n"
+    "6. Joining a one-to-many relationship repeats the \"one\" side's rows — "
+    "aggregate the measure from the correct table, and use COUNT(DISTINCT ...) "
+    "when counting entities on the \"one\" side.\n"
+    "7. Give computed columns clear aliases (AS total_sales) so the result "
+    "reads well and can be charted.\n"
+    "8. Wrap any table or column named like an SQL keyword (order, group, "
+    "key...) in double quotes.\n"
+    "9. Output exactly one SQL statement, nothing else — no markdown fences, "
+    "no explanation, no comments.\n\n"
+)
+
+
 def ollama_fallback(
-    text: str, history: list[dict[str, str]] | None = None, table: str | None = None
+    text: str,
+    history: list[dict[str, str]] | None = None,
+    tables: list[str] | None = None,
+    drill: dict[str, str] | None = None,
 ) -> ParseResult:
     """Ask an Ollama model to generate SQL when the rules don't match.
 
@@ -416,17 +472,24 @@ def ollama_fallback(
     {"text": ..., "sql": ...} dict — lets a follow-up like "now break that
     down by region" resolve "that" against what was already asked/run.
 
-    `table` scopes the schema shown to the model to just that one table —
-    used for a user-uploaded dataset (see app/db.py::import_uploaded_csv),
-    which has no hand-written rule-based parser support, so it always goes
-    through here rather than confusing the model with the unrelated `sales`
-    schema too. The sales-specific query plan/strict-rules/few-shot blocks
-    below are skipped for that case since they assume the sales schema.
+    `drill` ({"column", "value"}) means the user clicked one bar/slice of the
+    previous chart: the model is told to narrow the previous query to that
+    value and break it down by another column.
+
+    `tables` scopes the schema shown to the model to just those tables —
+    user-uploaded datasets (see app/db.py::import_uploaded_csv) have no
+    hand-written rule-based parser support, so they always go through here,
+    without the unrelated `sales` schema cluttering the prompt. With more
+    than one table the model is also given example values and relationship
+    hints, plus rules for joining/merging them. The sales-specific query
+    plan/strict-rules/few-shot blocks below are skipped unless `sales` is the
+    only table, since they assume its schema.
     """
     import ollama  # imported lazily so the app still runs without it installed/running
 
-    is_sales = not table or table == TABLE
-    schema = get_schema(table)
+    is_sales = _is_sales_only(tables)
+    multi = bool(tables) and len(tables) > 1
+    schema = get_schema(tables, with_samples=multi)
 
     history_block = ""
     if history:
@@ -436,10 +499,32 @@ def ollama_fallback(
             "to resolve references like \"that\", \"it\", \"those\", or a "
             f"follow-up refinement of a prior question:\n{turns}\n\n"
         )
-    table_line = f"Write SQL against the `{table}` table.\n" if table else ""
+    table_line = ""
+    if tables:
+        table_line = "Write SQL against " + (
+            f"these tables: {', '.join(f'`{t}`' for t in tables)}.\n" if multi
+            else f"the `{tables[0]}` table.\n"
+        )
+
+    hints_block = ""
+    if multi:
+        hints = get_join_hints(tables)
+        if hints:
+            hints_block = f"Likely relationships between the tables:\n{hints}\n\n"
+
+    drill_block = ""
+    if drill:
+        drill_block = (
+            f"The user clicked \"{drill['value']}\" in a chart of the previous result "
+            f"(the chart's label column was `{drill['column']}`). Take the previous "
+            "query, keep its filters, add a condition selecting that one value, and "
+            f"group by a different, informative column (not `{drill['column']}`) so the "
+            "result is a new breakdown of just that value. Use the previous SQL's real "
+            "table/column names for the condition.\n\n"
+        )
 
     plan_block = ""
-    if is_sales:
+    if is_sales and not drill:
         plan = _build_query_plan(text)
         if plan:
             plan_block = (
@@ -466,7 +551,9 @@ def ollama_fallback(
             "a question about how many orders/rows should COUNT(*); a "
             "question about price should AVG(price) unless a total is "
             "explicitly asked for.\n"
-            "6. Output exactly one SQL statement, nothing else — no markdown "
+            "6. A trend / over-time question groups by month: "
+            "strftime('%Y-%m', dispatch_date), ordered chronologically.\n"
+            "7. Output exactly one SQL statement, nothing else — no markdown "
             "fences, no explanation, no comments.\n\n"
         )
         examples_block = (
@@ -478,6 +565,10 @@ def ollama_fallback(
             "SQL: SELECT AVG(price) AS avg_price FROM sales WHERE "
             "LOWER(brand) = 'samsung' AND LOWER(product) = 'mobile phone' "
             "AND LOWER(region) = 'west'\n\n"
+            "Q: show me the sales trend over time\n"
+            "SQL: SELECT strftime('%Y-%m', dispatch_date) AS month, "
+            "SUM(quantity_sold) AS total_quantity_sold FROM sales "
+            "GROUP BY month ORDER BY month\n\n"
             "Q: how many laptops were dispatched after january 2024\n"
             "SQL: SELECT COUNT(*) AS count FROM sales WHERE "
             "LOWER(product) = 'laptop' AND dispatch_date >= '2024-01-01'\n\n"
@@ -486,12 +577,19 @@ def ollama_fallback(
     prompt = (
         "You are a highly reliable SQLite SQL generator.\n\n"
         f"{history_block}"
+        f"{drill_block}"
         f"{table_line}"
         f"Schema:\n{schema}\n\n"
+        f"{hints_block}"
+        f"{_MULTI_TABLE_RULES if multi else ''}"
         f"{plan_block}"
         f"{rules_block}"
         f"{examples_block}"
         f"Question: {text}\n\n"
+        "The question may be in English, Hindi or Hinglish (Hindi in English "
+        "letters); interpret it either way.\n"
+        "If it asks to predict/forecast, return the historical series to extend: "
+        "one row per month (or day), ordered by date, as (period, value).\n"
         "If this asks for a chart/graph/plot/trend/breakdown/comparison, "
         "prefer a GROUP BY query that returns multiple comparable rows (e.g. "
         "one per category, or one per date/month for a trend over time) "
@@ -518,7 +616,19 @@ def ollama_fallback(
     sql = sql.replace("\\*", "*").replace("\\_", "_")
     sql = sql.strip().rstrip(";").strip()
     is_write = bool(re.match(r"\s*(delete|update|insert)", sql, re.I))
-    return ParseResult(sql, "ollama", is_write=is_write)
+    preview_sql = None
+    if is_write:
+        # A write is only run after showing what it would touch, which for a
+        # DELETE is the same FROM/WHERE as a SELECT. Anything else (UPDATE,
+        # INSERT, DROP...) has no such preview, so it is refused, not run blind.
+        m = re.match(r"\s*delete\s+from\s+(.+)$", sql, re.I | re.S)
+        if not m:
+            raise UnsafeSQL(
+                "That would change the data in a way I can't preview first, so I didn't run it. "
+                "Cleaning commands like 'remove duplicate rows' or 'fill empty price with the average' are supported."
+            )
+        preview_sql = f"SELECT * FROM {m.group(1)}"
+    return ParseResult(sql, "ollama", is_write=is_write, preview_sql=preview_sql)
 
 
 # Explanatory diagram requests ("explain this dataset with a flowchart",
@@ -539,16 +649,21 @@ def wants_diagram(text: str) -> bool:
     return bool(_DIAGRAM_WORDS.search(text))
 
 
-def generate_diagram(text: str, table: str | None = None) -> str:
+def generate_diagram(text: str, tables: list[str] | None = None) -> str:
     """Ask Ollama for a Mermaid diagram (not SQL) describing the dataset's
-    structure, per an explicit flowchart/sequence-diagram/etc. request."""
+    structure, per an explicit flowchart/sequence-diagram/etc. request. With
+    several uploaded tables, the relationship hints let an ER diagram draw
+    the links between them."""
     import ollama  # imported lazily so the app still runs without it installed/running
 
-    schema = get_schema(table)
+    schema = get_schema(tables)
+    hints = get_join_hints(tables) if tables and len(tables) > 1 else ""
+    hints_block = f"Likely relationships between the tables:\n{hints}\n\n" if hints else ""
     prompt = (
         "You produce Mermaid diagrams only — no SQL, no explanation outside "
         "the diagram itself.\n"
         f"Database schema:\n{schema}\n\n"
+        f"{hints_block}"
         f"Request: {text}\n\n"
         "Pick whichever Mermaid diagram type actually fits the request "
         "(flowchart TD, erDiagram, sequenceDiagram, mindmap, classDiagram, "
@@ -573,13 +688,13 @@ def generate_diagram(text: str, table: str | None = None) -> str:
     return diagram
 
 
-def explain_sql(sql: str, question: str, table: str | None = None) -> str:
+def explain_sql(sql: str, question: str, tables: list[str] | None = None) -> str:
     """Ask Ollama for a short plain-English explanation of a SQL query
     already generated for `question` — a "show your work" aid, not part of
     the query pipeline itself."""
     import ollama  # imported lazily so the app still runs without it installed/running
 
-    schema = get_schema(table)
+    schema = get_schema(tables)
     prompt = (
         "Explain what this SQL query does, in plain English, for someone "
         "who doesn't know SQL. 2-4 short sentences, no jargon, no markdown, "
@@ -603,16 +718,112 @@ def explain_sql(sql: str, question: str, table: str | None = None) -> str:
     return response["message"]["content"].strip()
 
 
+def _ollama_text(prompt: str, what: str) -> str:
+    import ollama  # imported lazily so the app still runs without it installed/running
+
+    client = ollama.Client(host=OLLAMA_HOST)
+    try:
+        response = client.chat(
+            model=OLLAMA_MODEL,
+            messages=[{"role": "user", "content": prompt}],
+            options={"temperature": 0},
+        )
+    except Exception as exc:  # noqa: BLE001 - connection errors, model errors, etc.
+        raise OllamaUnavailable(
+            f"Couldn't get {what} from Ollama model {OLLAMA_MODEL!r} at {OLLAMA_HOST}: {exc}"
+        ) from exc
+    return response["message"]["content"].strip()
+
+
+def translate_question(text: str, tables: list[str] | None = None) -> str:
+    """Rewrite a spoken Hindi / Hinglish request (as transcribed — possibly in
+    Devanagari or Urdu script, possibly with mishearings) as one clear English
+    question about the data. The table schema is what lets it repair a
+    mishearing: "branches" is almost certainly "brands" when the schema has a
+    brand column."""
+    schema = get_schema(tables)
+    prompt = (
+        "A person asked a question about a database out loud, in Hindi, Hinglish "
+        "(Hindi in English letters) or English. It was transcribed by a "
+        "speech-recognition system, so it may be in Devanagari/Urdu script and "
+        "may contain misheard words.\n\n"
+        f"Database schema:\n{schema}\n\n"
+        f"Transcript: {text}\n\n"
+        "Rewrite it as ONE clear English question or command about this data. "
+        "Where a word looks misheard, pick the schema column or value it most "
+        "likely meant. If it is already clear English, return it unchanged. "
+        "Return ONLY the English sentence."
+    )
+    return _ollama_text(prompt, "a translation").strip().strip('"')
+
+
+def summarize_with_llm(question: str, columns: list[str], rows: list[list]) -> str:
+    """One or two sentences answering `question` from a result set whose
+    shape the deterministic summarizer (app/summary.py) doesn't cover — e.g.
+    several columns. Only the first rows are shown to the model."""
+    shown = rows[:30]
+    table = "\n".join([" | ".join(columns)] + [" | ".join("" if v is None else str(v) for v in r) for r in shown])
+    note = f" (first {len(shown)} of {len(rows)} rows)" if len(rows) > len(shown) else ""
+    prompt = (
+        "Answer the question below in ONE or TWO plain sentences, using only "
+        "the data table. Use only numbers that appear in the table — never "
+        "compute or estimate new ones. No markdown, no preamble.\n\n"
+        f"Question: {question}\n\nData{note}:\n{table}"
+    )
+    return _ollama_text(prompt, "a summary")
+
+
+def suggest_questions(tables: list[str] | None, count: int = 4) -> list[str]:
+    """A few starter questions a non-technical person could ask about these
+    tables. With several tables, some should need them combined — it's the
+    quickest way to show off the join support."""
+    schema = get_schema(tables, with_samples=True)
+    multi = bool(tables) and len(tables) > 1
+    hints = get_join_hints(tables) if multi else ""
+    prompt = (
+        "Suggest questions a non-technical person might ask about this "
+        "database, in plain everyday language (no SQL, no column names in "
+        "code style).\n\n"
+        f"Schema:\n{schema}\n\n"
+        + (f"Likely relationships between the tables:\n{hints}\n\n" if hints else "")
+        + f"Write exactly {count} short questions (under 12 words each) that "
+        "can be answered from this data. Make them varied: at least one "
+        "ranking or total, and one that asks for a chart. "
+        + ("At least two must need information from more than one table. " if multi else "")
+        + "Return ONLY a JSON array of strings."
+    )
+    content = _ollama_text(prompt, "question suggestions")
+
+    match = re.search(r"\[.*\]", content, re.S)
+    try:
+        items = json.loads(match.group(0)) if match else []
+    except json.JSONDecodeError:
+        items = []
+    if not items:  # model ignored the JSON instruction — salvage a bulleted/numbered list
+        items = [re.sub(r"^[-*\d.)\s]+", "", line).strip(' "') for line in content.splitlines()]
+    questions = [q.strip() for q in items if isinstance(q, str) and 8 <= len(q.strip()) <= 140]
+    return questions[:count]
+
+
 def parse(
-    text: str, history: list[dict[str, str]] | None = None, table: str | None = None
+    text: str,
+    history: list[dict[str, str]] | None = None,
+    tables: list[str] | None = None,
+    drill: dict[str, str] | None = None,
 ) -> ParseResult:
-    # `table` non-None means the active dataset is a user-uploaded CSV, not
-    # the sample `sales` table the rule-based parser is hand-tuned for —
-    # its patterns reference sales-specific columns and known values
-    # (KNOWN_BRANDS, KNOWN_REGIONS, ...), so they'd misfire against an
-    # arbitrary schema. Go straight to Ollama, schema-scoped to that table.
-    if table and table != TABLE:
-        return ollama_fallback(text, history=history, table=table)
+    # Anything other than `sales` alone means user-uploaded data (possibly
+    # several tables to join), not the sample table the rule-based parser is
+    # hand-tuned for — its patterns reference sales-specific columns and known
+    # values (KNOWN_BRANDS, KNOWN_REGIONS, ...), so they'd misfire against an
+    # arbitrary schema. Go straight to Ollama, schema-scoped to those tables.
+    if not _is_sales_only(tables):
+        return ollama_fallback(text, history=history, tables=tables, drill=drill)
+
+    # A drill-down is "this one value of the previous result", a forecast needs
+    # the monthly series rather than a single number — neither is something
+    # the rule patterns understand, and they'd misread e.g. "next 3 months".
+    if drill or wants_forecast(text):
+        return ollama_fallback(text, history=history, tables=tables, drill=drill)
 
     # The rule-based parser has no conversational memory — it's a fast path
     # for standalone phrasings. A follow-up ("now just for laptops") won't

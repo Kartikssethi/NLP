@@ -84,7 +84,15 @@
     background: var(--gold-soft); color: #5a4322; padding: 3px 9px; border-radius: 7px; cursor: pointer;
     font-size: 0.79rem; font-family: "Inter", sans-serif; transition: background 0.15s;
   }
-  #examples code:hover { background: #d8c393; }
+  #examples code:hover, .suggest-row code:hover { background: #d8c393; }
+  .suggest-row {
+    color: var(--ink-soft); font-size: 0.83rem; line-height: 2; margin: 0 0 18px 40px;
+  }
+  .suggest-row code {
+    background: var(--gold-soft); color: #5a4322; padding: 3px 9px; border-radius: 7px; cursor: pointer;
+    font-size: 0.79rem; font-family: "Inter", sans-serif; transition: background 0.15s;
+  }
+  #examples.muted { font-style: italic; }
 
   .msg-row { display: flex; gap: 10px; margin-bottom: 20px; align-items: flex-start; }
   .msg-row.user { flex-direction: row-reverse; }
@@ -126,6 +134,18 @@
     border-radius: 10px; font-family: ui-monospace, "SF Mono", Menlo, monospace;
     font-size: 0.78rem; overflow-x: auto; white-space: pre-wrap; margin-bottom: 10px;
   }
+  .answer-line {
+    font-size: 0.98rem; font-weight: 500; line-height: 1.5; color: var(--ink);
+    padding: 2px 0 2px 12px; border-left: 3px solid var(--gold); margin-bottom: 12px;
+  }
+  .answer-line.loading { color: var(--ink-soft); font-style: italic; font-weight: 400; }
+  .chart-toggle { display: inline-flex; background: #ece5d2; border-radius: 14px; padding: 2px; margin-bottom: 6px; }
+  .seg {
+    background: transparent; color: var(--ink-soft); font-size: 0.72rem; font-weight: 500;
+    padding: 4px 13px; border-radius: 12px;
+  }
+  .seg:hover { color: var(--ink); }
+  .seg.active { background: var(--accent); color: var(--panel); }
   .result-actions { display: flex; gap: 6px; margin-bottom: 10px; flex-wrap: wrap; }
   .action-btn {
     display: flex; align-items: center; gap: 5px;
@@ -160,6 +180,72 @@
   th { background: #efe9d8; font-weight: 600; font-family: "Inter", sans-serif; }
   tr:nth-child(even) td { background: #f8f4e8; }
 
+  .insights { display: flex; flex-wrap: wrap; gap: 6px; margin: -4px 0 12px; }
+  .insight {
+    display: flex; align-items: center; gap: 6px; font-size: 0.76rem; line-height: 1.35;
+    padding: 4px 10px; border-radius: 12px; background: #f3efe2; color: var(--ink);
+  }
+  .insight .ico { font-size: 0.62rem; flex-shrink: 0; }
+  .insight.up { background: #e3eddc; } .insight.up .ico { color: #2f6b3a; }
+  .insight.down { background: var(--danger-soft); } .insight.down .ico { color: var(--danger); }
+  .insight.info .ico { color: var(--gold); }
+  .chart-note { font-size: 0.74rem; color: var(--ink-soft); margin: 2px 0 8px; }
+  .drillable { cursor: pointer; transition: opacity 0.12s; }
+  .drillable:hover { opacity: 0.78; }
+  .orig-note { font-size: 0.72rem; color: var(--ink-soft); margin: 4px 4px 0; font-style: italic; text-align: right; }
+
+  .health-card { font-size: 0.82rem; }
+  .health-card h4 { font-family: "Playfair Display", serif; font-size: 1.05rem; margin: 0 0 8px; }
+  .health-badges { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 10px; }
+  .badge-pill { padding: 3px 10px; border-radius: 12px; background: #e3eddc; font-size: 0.74rem; font-weight: 500; }
+  .badge-pill.warn { background: #f6e6c4; color: #6b4a14; }
+  .health-card td.warn { background: #f6e6c4 !important; font-weight: 600; }
+  .health-card .suggest-row { margin: 10px 0 0; }
+  .er-title { font-weight: 600; font-size: 0.85rem; margin-bottom: 6px; }
+
+  .sql-editor textarea {
+    width: 100%; min-height: 84px; resize: vertical; background: #16241a; color: #cfe0c9;
+    border: 1px solid #2c4635; border-radius: 10px; padding: 11px 14px; outline: none;
+    font-family: ui-monospace, "SF Mono", Menlo, monospace; font-size: 0.78rem; line-height: 1.5;
+  }
+  .sql-editor { margin-bottom: 10px; }
+  .sql-editor .editor-actions { display: flex; align-items: center; gap: 8px; margin-top: 6px; }
+  .sql-editor .editor-error { color: var(--danger); font-size: 0.78rem; flex: 1; }
+
+  .badge { background: var(--gold); color: #fff; border-radius: 9px; font-size: 0.66rem; padding: 1px 6px; margin-left: 2px; }
+
+  /* ---- report / dashboard overlay ---- */
+  #reportView { position: fixed; inset: 0; z-index: 50; background: var(--bg); overflow-y: auto; }
+  #reportView[hidden] { display: none; }
+  .report-toolbar {
+    position: sticky; top: 0; z-index: 2; display: flex; justify-content: space-between; align-items: center;
+    gap: 10px; flex-wrap: wrap; padding: 12px 24px; background: var(--panel); border-bottom: 1px solid var(--border);
+  }
+  .report-tabs { display: inline-flex; background: #ece5d2; border-radius: 14px; padding: 2px; }
+  .report-actions { display: flex; gap: 8px; }
+  .report-page { max-width: 1040px; margin: 0 auto; padding: 24px; }
+  .report-page h1 { font-family: "Playfair Display", serif; margin: 0 0 4px; font-size: 1.7rem; }
+  .report-meta { color: var(--ink-soft); font-size: 0.82rem; margin-bottom: 20px; }
+  .report-grid { display: grid; grid-template-columns: 1fr; gap: 16px; }
+  .report-grid.dashboard { grid-template-columns: repeat(auto-fit, minmax(420px, 1fr)); }
+  .report-card {
+    background: #fff; border: 1px solid var(--border); border-radius: 14px; padding: 16px 18px;
+    box-shadow: 0 1px 2px rgba(26,42,29,0.04); break-inside: avoid; position: relative; min-width: 0;
+  }
+  .report-card h3 { margin: 0 0 8px; font-size: 0.95rem; }
+  .report-card .answer-line { font-size: 0.9rem; }
+  .report-card .chart-holder svg { max-width: 100%; height: auto; }
+  .report-card .sql-small { font-family: ui-monospace, Menlo, monospace; font-size: 0.68rem; color: var(--ink-soft); margin-top: 8px; white-space: pre-wrap; }
+  .report-card .unpin { position: absolute; top: 10px; right: 12px; background: transparent; color: var(--ink-soft); font-size: 0.74rem; }
+  .report-empty { color: var(--ink-soft); padding: 40px 0; text-align: center; }
+  @media print {
+    .app, .report-toolbar { display: none !important; }
+    #reportView { position: static; overflow: visible; background: #fff; }
+    .report-page { max-width: none; padding: 0; }
+    .report-grid.dashboard { grid-template-columns: 1fr 1fr; }
+    .report-card { box-shadow: none; }
+  }
+
   /* ---- composer ---- */
   .composer-wrap { flex-shrink: 0; padding: 10px 24px 20px; background: var(--bg); }
 
@@ -172,6 +258,23 @@
   }
   .pill-btn:hover { background: #ece5d2; color: var(--ink); }
   .pill-btn svg { flex-shrink: 0; }
+  .pill-btn.on { background: var(--gold-soft); color: #5a4322; }
+
+  .dataset-chips { display: none; flex-wrap: wrap; gap: 6px; margin-bottom: 8px; }
+  .chip {
+    display: flex; align-items: center; gap: 4px; cursor: pointer; user-select: none;
+    padding: 5px 11px; border-radius: 16px; font-size: 0.74rem; font-weight: 500;
+    border: 1px solid var(--border); background: transparent; color: var(--ink-soft);
+  }
+  .chip:hover { background: #ece5d2; color: var(--ink); }
+  .chip.selected { background: var(--accent); border-color: var(--accent); color: var(--panel); }
+  .chip .chip-meta { opacity: 0.65; font-weight: 400; }
+  .chip .chip-remove {
+    width: 16px; height: 16px; border-radius: 50%; margin-right: -6px; padding: 0;
+    display: flex; align-items: center; justify-content: center;
+    background: transparent; color: inherit; font-size: 0.95rem; line-height: 1; opacity: 0.7;
+  }
+  .chip .chip-remove:hover { opacity: 1; background: rgba(0,0,0,0.12); }
 
   #recordingBar {
     display: none; flex-direction: column; gap: 6px;
@@ -244,6 +347,10 @@
       </div>
     </div>
     <div class="header-actions">
+      <button type="button" class="pill-btn" id="reportBtn" title="Pinned results and this chat, ready to print or save as a PDF">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 3H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"/><path d="M14 3v6h6"/><path d="M8 13h8M8 17h5"/></svg>
+        <span>Report</span><span class="badge" id="pinBadge" hidden>0</span>
+      </button>
       <button type="button" class="icon-btn" id="newChatBtn" title="New chat">
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M5 12h14"/></svg>
       </button>
@@ -253,24 +360,27 @@
   <div id="chat">
     <div class="welcome" id="welcome">
       <p class="subtitle">Type it, or just say it — I'll turn it into a query.</p>
-      <div id="examples">
-        Try: <code>top 5 brands by quantity sold</code> ·
-        <code>how many laptops in west region</code> ·
-        <code>average price of samsung phones</code> ·
-        <code>delete 2 laptops in central region</code>
-      </div>
+      <div id="examples" class="suggest"></div>
     </div>
     <div id="messages"></div>
   </div>
 
   <div class="composer-wrap">
+    <div class="dataset-chips" id="datasetChips"></div>
     <div class="toolbar">
-      <input type="file" id="csvInput" accept=".csv" style="display:none" />
-      <button type="button" class="pill-btn" id="uploadBtn">
+      <input type="file" id="csvInput" accept=".csv,.xlsx,.xlsm" multiple style="display:none" />
+      <button type="button" class="pill-btn" id="uploadBtn" title="CSV or Excel (.xlsx) — each file (or Excel sheet) becomes a table you can join">
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"/></svg>
-        Upload dataset
+        Upload datasets
       </button>
-      <button type="button" class="pill-btn" id="sampleBtn" style="display:none">Use sample data</button>
+      <button type="button" class="pill-btn" id="langBtn" title="The language you speak your questions in. Hindi / Hinglish is turned into an English question for you.">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M2 12h20"/><path d="M12 2a15 15 0 0 1 0 20 15 15 0 0 1 0-20z"/></svg>
+        <span>Voice: English</span>
+      </button>
+      <button type="button" class="pill-btn" id="speakBtn" style="display:none" title="Read each answer aloud (answers to questions you speak are always read)">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 5L6 9H2v6h4l5 4V5z"/><path d="M15.5 8.5a5 5 0 0 1 0 7"/><path d="M19 5a10 10 0 0 1 0 14"/></svg>
+        <span>Voice replies: off</span>
+      </button>
     </div>
 
     <div id="recordingBar">
@@ -294,8 +404,38 @@
   </div>
 </div>
 
+<div id="reportView" hidden>
+  <div class="report-toolbar">
+    <div class="report-tabs">
+      <button type="button" class="seg active" data-tab="pinned">Pinned</button>
+      <button type="button" class="seg" data-tab="chat">This chat</button>
+    </div>
+    <div class="report-actions">
+      <button type="button" class="primary" id="reportPrint">Print / Save as PDF</button>
+      <button type="button" class="secondary" id="reportClose">Close</button>
+    </div>
+  </div>
+  <div class="report-page" id="reportPage"></div>
+</div>
+
 <script>
-mermaid.initialize({ startOnLoad: false });
+// Chart colors follow the app palette instead of Mermaid's default pale lavender
+// (which made bars nearly invisible on the cream background).
+const CHART_COLORS = ['#1c3324', '#b6884c', '#5b7d5f', '#d6b777', '#7a5c3a', '#8fae8b',
+                      '#3f5a45', '#a3704a', '#c9d6b8', '#6f8f73', '#e4d3ab', '#9c3b2e'];
+const themeVariables = {
+  fontFamily: 'Inter, sans-serif',
+  primaryColor: '#e4d3ab', primaryTextColor: '#1a2a1d', primaryBorderColor: '#b6884c',
+  lineColor: '#5b6b56', secondaryColor: '#f2ede0', tertiaryColor: '#faf7ee',
+  pieOpacity: '1', pieOuterStrokeWidth: '0px', pieStrokeColor: '#faf7ee', pieStrokeWidth: '2px',
+  xyChart: { plotColorPalette: CHART_COLORS.join(',') },
+};
+// Pie slices carry white percentage labels, so every slice color must be dark enough for them.
+const PIE_COLORS = ['#1c3324', '#b6884c', '#5b7d5f', '#7a5c3a', '#3f5a45', '#a3704a',
+                    '#6f8f73', '#9c3b2e', '#8a6d2f', '#4d6b7a', '#7d4e6b', '#5a5a3a'];
+PIE_COLORS.forEach((c, i) => { themeVariables[`pie${i + 1}`] = c; });
+themeVariables.pieSectionTextColor = '#ffffff';
+mermaid.initialize({ startOnLoad: false, theme: 'base', themeVariables });
 
 const chatEl = document.getElementById('chat');
 const welcomeEl = document.getElementById('welcome');
@@ -314,7 +454,7 @@ const liveCaptionEl = document.getElementById('liveCaption');
 
 const csvInput = document.getElementById('csvInput');
 const uploadBtn = document.getElementById('uploadBtn');
-const sampleBtn = document.getElementById('sampleBtn');
+const datasetChipsEl = document.getElementById('datasetChips');
 
 const RECORD_SECONDS = 30;
 const LIVE_TRANSCRIBE_INTERVAL_MS = 3000;
@@ -328,9 +468,11 @@ let autoStopTimeout = null;
 // it (see nl2sql.py). Cleared on page reload or via "New chat".
 let conversationHistory = [];
 
-// Which table /query runs against — "sales" (built-in) until a CSV is
-// uploaded, then "user_data". See app/db.py::UPLOADED_TABLE.
-let activeTable = 'sales';
+// Datasets that can be queried: the built-in `sales` table plus one table per
+// uploaded CSV. `selected` is what /query runs against — more than one means
+// the question can join/merge them (see nl2sql.py::ollama_fallback).
+let datasets = [{ name: 'sales', label: 'Sales data' }];
+const selected = new Set(['sales']);
 
 // --- Voice input: faster-whisper, with periodic re-transcription while
 // recording so the input updates "live" as you talk, not just at the end.
@@ -342,9 +484,76 @@ let recording = false;
 let lastTranscript = ''; // last successful transcription this recording, used as a
                           // fallback if the final call lands while a periodic one is in-flight
 
-document.querySelectorAll('#examples code').forEach(el => {
-  el.addEventListener('click', () => { textInput.value = el.textContent; form.requestSubmit(); });
+// Starter questions: fixed ones the rule engine is known to handle for the
+// sample data; for uploaded datasets they're generated from the schema.
+const SALES_EXAMPLES = [
+  'top 5 brands by quantity sold',
+  'how many laptops in west region',
+  'average price of samsung phones',
+  'delete 2 laptops in central region',
+];
+const examplesEl = document.getElementById('examples');
+
+function fillSuggestions(container, questions) {
+  container.classList.remove('muted');
+  container.replaceChildren(document.createTextNode('Try: '));
+  questions.forEach((q, i) => {
+    if (i) container.appendChild(document.createTextNode(' · '));
+    const code = document.createElement('code');
+    code.textContent = q;
+    container.appendChild(code);
+  });
+}
+
+document.addEventListener('click', (e) => {
+  const chip = e.target.closest('.suggest code, .suggest-row code');
+  if (!chip) return;
+  textInput.value = chip.textContent;
+  form.requestSubmit();
 });
+
+let suggestTimer = null;
+let suggestSeq = 0;
+
+function scheduleSuggestions(announce = false) {
+  clearTimeout(suggestTimer);
+  suggestTimer = setTimeout(() => refreshSuggestions(announce), 350);
+}
+
+async function refreshSuggestions(announce) {
+  const picked = Array.from(selected);
+  if (picked.length === 1 && picked[0] === 'sales') {
+    suggestSeq++;
+    fillSuggestions(examplesEl, SALES_EXAMPLES);
+    return;
+  }
+  const seq = ++suggestSeq;
+  examplesEl.classList.add('muted');
+  examplesEl.textContent = 'Thinking of questions to ask about your data…';
+  try {
+    const resp = await fetch('/suggest-questions', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ tables: picked }),
+    });
+    const data = await resp.json();
+    if (seq !== suggestSeq) return; // selection changed while this was loading
+    if (!resp.ok || !data.questions.length) throw new Error('no suggestions');
+    fillSuggestions(examplesEl, data.questions);
+    if (announce) {
+      const row = document.createElement('div');
+      row.className = 'suggest-row';
+      fillSuggestions(row, data.questions);
+      messagesEl.appendChild(row);
+      scrollToBottom();
+    }
+  } catch {
+    if (seq !== suggestSeq) return;
+    examplesEl.classList.add('muted');
+    examplesEl.textContent = 'Ask anything about your data.';
+  }
+}
+fillSuggestions(examplesEl, SALES_EXAMPLES);
 
 form.addEventListener('submit', (e) => {
   e.preventDefault();
@@ -369,42 +578,164 @@ micBtn.addEventListener('click', () => {
 uploadBtn.addEventListener('click', () => csvInput.click());
 
 csvInput.addEventListener('change', async () => {
-  const file = csvInput.files[0];
+  const files = Array.from(csvInput.files);
   csvInput.value = '';
-  if (!file) return;
+  const loaded = [];
+  let lastEr = null;
 
-  addSystemNote(`Loading ${file.name}...`);
-  const form = new FormData();
-  form.append('file', file);
+  for (const file of files) {
+    addSystemNote(`Loading ${file.name}...`);
+    const form = new FormData();
+    form.append('file', file);
 
-  let resp, data;
-  try {
-    resp = await fetch('/upload-dataset', { method: 'POST', body: form });
-    data = await resp.json();
-  } catch (err) {
-    addSystemNote(`Upload failed: ${err}`);
-    return;
+    let resp, data;
+    try {
+      resp = await fetch('/upload-dataset', { method: 'POST', body: form });
+      data = await resp.json();
+    } catch (err) {
+      addSystemNote(`Upload failed for ${file.name}: ${err}`);
+      continue;
+    }
+    if (!resp.ok) {
+      addSystemNote(`${file.name}: ${(data && data.detail) || 'Upload failed.'}`);
+      continue;
+    }
+
+    if (data.er_diagram) lastEr = data.er_diagram;
+    // One file can yield several tables (an Excel workbook: one per sheet).
+    for (const info of data.datasets) {
+      upsertDataset(info);
+      loaded.push(info.table);
+      const where = info.sheet ? ` (sheet "${info.sheet}")` : '';
+      addSystemNote(
+        `${info.replaced ? 'Replaced' : 'Loaded'} ${info.table}${where} — ${info.row_count.toLocaleString()} rows, columns: ${info.columns.join(', ')}`
+      );
+      if (info.profile) showHealthCard(info.profile);
+    }
   }
-  if (!resp.ok) {
-    addSystemNote((data && data.detail) || 'Upload failed.');
-    return;
-  }
 
-  activeTable = data.table;
-  conversationHistory = []; // new dataset — old follow-up context no longer applies
-  datasetLabelText.textContent = `${data.filename} · ${data.row_count} rows`;
-  sampleBtn.style.display = '';
-  addSystemNote(`Loaded ${data.filename} — ${data.row_count} rows, columns: ${data.columns.join(', ')}`);
+  if (!loaded.length) return;
+  // First upload moves off the sample data; later uploads join the selection.
+  if (selected.size === 1 && selected.has('sales')) selected.delete('sales');
+  loaded.forEach(name => selected.add(name));
+  conversationHistory = []; // different datasets — old follow-up context no longer applies
+  renderDatasets();
+  if (selected.size > 1) addSystemNote('Several datasets selected — you can ask questions that span them.');
+  if (lastEr && lastEr.includes('--')) showRelationships(lastEr); // "--" only appears on a detected link
+  scheduleSuggestions(true);
 });
 
-sampleBtn.addEventListener('click', async () => {
-  await fetch('/use-sample-dataset', { method: 'POST' });
-  activeTable = 'sales';
+function upsertDataset(info) {
+  const entry = { name: info.table, label: info.table, rows: info.row_count, uploaded: true };
+  const i = datasets.findIndex(d => d.name === entry.name);
+  if (i >= 0) datasets[i] = entry;
+  else datasets.push(entry);
+}
+
+function toggleDataset(name) {
+  if (selected.has(name)) {
+    if (selected.size === 1) return; // always keep one dataset to query
+    selected.delete(name);
+  } else {
+    selected.add(name);
+  }
   conversationHistory = [];
-  datasetLabelText.textContent = 'Sales data';
-  sampleBtn.style.display = 'none';
-  addSystemNote('Switched back to the sample sales dataset.');
-});
+  renderDatasets();
+  scheduleSuggestions();
+}
+
+async function removeDataset(name) {
+  try {
+    const resp = await fetch(`/datasets/${encodeURIComponent(name)}`, { method: 'DELETE' });
+    if (!resp.ok) throw new Error(resp.statusText);
+  } catch (err) {
+    addSystemNote(`Couldn't remove ${name}: ${err.message || err}`);
+    return;
+  }
+  datasets = datasets.filter(d => d.name !== name);
+  selected.delete(name);
+  if (!selected.size) selected.add('sales');
+  conversationHistory = [];
+  renderDatasets();
+  addSystemNote(`Removed ${name}.`);
+  scheduleSuggestions();
+}
+
+function renderDatasets() {
+  datasetChipsEl.innerHTML = '';
+  datasets.forEach(ds => {
+    const chip = document.createElement('div');
+    chip.className = 'chip' + (selected.has(ds.name) ? ' selected' : '');
+    chip.title = selected.has(ds.name) ? 'Click to exclude from queries' : 'Click to include in queries';
+    chip.innerHTML = '<span></span>';
+    chip.firstChild.textContent = ds.label;
+    if (ds.rows !== undefined) {
+      const meta = document.createElement('span');
+      meta.className = 'chip-meta';
+      meta.textContent = `· ${ds.rows.toLocaleString()}`;
+      chip.appendChild(meta);
+    }
+    chip.addEventListener('click', () => toggleDataset(ds.name));
+    if (ds.uploaded) {
+      const rm = document.createElement('button');
+      rm.type = 'button';
+      rm.className = 'chip-remove';
+      rm.title = `Remove ${ds.name}`;
+      rm.textContent = '×';
+      rm.addEventListener('click', (e) => { e.stopPropagation(); removeDataset(ds.name); });
+      chip.appendChild(rm);
+    }
+    datasetChipsEl.appendChild(chip);
+  });
+  datasetChipsEl.style.display = datasets.length > 1 ? 'flex' : 'none';
+
+  const picked = datasets.filter(d => selected.has(d.name));
+  datasetLabelText.textContent = picked.length === 1
+    ? (picked[0].rows !== undefined ? `${picked[0].label} · ${picked[0].rows.toLocaleString()} rows` : picked[0].label)
+    : `${picked.length} datasets · ${picked.map(d => d.label).join(' + ')}`;
+}
+
+// Uploaded tables persist in the database, so offer them again after a reload.
+fetch('/datasets').then(r => r.json()).then(d => {
+  d.datasets.forEach(upsertDataset);
+  renderDatasets();
+}).catch(() => {});
+
+// --- Reading answers aloud (browser speech synthesis) -----------------------
+
+const speakBtn = document.getElementById('speakBtn');
+const canSpeak = 'speechSynthesis' in window;
+let speakReplies = false;
+try { speakReplies = localStorage.getItem('speakReplies') === '1'; } catch { /* storage unavailable */ }
+
+function renderSpeakToggle() {
+  speakBtn.classList.toggle('on', speakReplies);
+  speakBtn.querySelector('span').textContent = `Voice replies: ${speakReplies ? 'on' : 'off'}`;
+}
+if (canSpeak) {
+  speakBtn.style.display = '';
+  renderSpeakToggle();
+  speakBtn.addEventListener('click', () => {
+    speakReplies = !speakReplies;
+    if (!speakReplies) speechSynthesis.cancel();
+    try { localStorage.setItem('speakReplies', speakReplies ? '1' : '0'); } catch { /* storage unavailable */ }
+    renderSpeakToggle();
+  });
+}
+
+function speakText(text, btn) {
+  if (!canSpeak || !text) return;
+  speechSynthesis.cancel(); // also resets the label of whichever Listen button was mid-read
+  const utterance = new SpeechSynthesisUtterance(text);
+  const setState = (on) => {
+    if (!btn) return;
+    btn.dataset.speaking = on ? '1' : '';
+    btn.querySelector('span').textContent = on ? 'Stop' : 'Listen';
+  };
+  utterance.onstart = () => setState(true);
+  utterance.onend = utterance.onerror = () => setState(false);
+  speechSynthesis.speak(utterance);
+}
 
 function addSystemNote(text) {
   welcomeEl.style.display = 'none';
@@ -443,7 +774,7 @@ function assistantAvatar() {
   return div;
 }
 
-function addUserMessage(text) {
+function addUserMessage(text, original) {
   welcomeEl.style.display = 'none';
   const row = document.createElement('div');
   row.className = 'msg-row user';
@@ -456,6 +787,12 @@ function addUserMessage(text) {
   bubble.className = 'bubble';
   bubble.textContent = text;
   msg.append(meta, bubble);
+  if (original) {
+    const note = document.createElement('div');
+    note.className = 'orig-note';
+    note.textContent = `You said: ${original}`;
+    msg.appendChild(note);
+  }
   row.append(userAvatar(), msg);
   messagesEl.appendChild(row);
   scrollToBottom();
@@ -518,6 +855,19 @@ function startCountdown() {
 // final transcribe of the complete clip once you stop.
 
 async function startRecording() {
+  if (canSpeak) speechSynthesis.cancel(); // otherwise the mic would record the app talking
+
+  // Browsers only expose the microphone API on secure pages: https, or
+  // http://localhost. Opened via a network address (192.168.x.x, 0.0.0.0, a
+  // hostname) navigator.mediaDevices doesn't exist at all.
+  if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+    const hint = window.isSecureContext
+      ? "This browser doesn't support microphone recording."
+      : `Browsers only allow the microphone on secure pages. Open this app at http://localhost:8000 instead of ${location.host}.`;
+    addAssistantMessage().innerHTML = `<div class="error-box">${hint} You can still type your question.</div>`;
+    return;
+  }
+
   let stream;
   try {
     stream = await navigator.mediaDevices.getUserMedia({ audio: true });
@@ -539,7 +889,7 @@ async function startRecording() {
     while (transcribing) await new Promise(r => setTimeout(r, 100));
     const finalText = (await transcribeCurrentRecording(/* isFinal */ true)) || lastTranscript;
     endRecordingUI();
-    if (finalText) sendMessage(finalText, false);
+    if (finalText) sendMessage(finalText, false, undefined, undefined, { viaVoice: true, original: lastOriginal });
     else addAssistantMessage().innerHTML = '<div class="error-box">Didn\'t catch any speech, try again.</div>';
   };
 
@@ -556,6 +906,10 @@ function stopRecording() {
   if (mediaRecorder && mediaRecorder.state === 'recording') mediaRecorder.stop();
 }
 
+// Hindi / Hinglish mode: the live caption shows what was heard in the language
+// spoken; the final call also has the model turn it into an English question.
+let lastOriginal = '';
+
 async function transcribeCurrentRecording(isFinal) {
   // Skip overlapping calls, and wait for at least 2 chunks — a lone first
   // chunk is sometimes not yet a fully decodable container.
@@ -569,14 +923,23 @@ async function transcribeCurrentRecording(isFinal) {
 
     let resp, data;
     try {
-      resp = await fetch('/transcribe', { method: 'POST', body: form });
+      const params = new URLSearchParams();
+      if (voiceLang === 'hi') {
+        params.set('multilingual', 'true');
+        if (isFinal) {
+          params.set('to_english', 'true');
+          params.set('tables', Array.from(selected).join(','));
+        }
+      }
+      resp = await fetch(`/transcribe?${params}`, { method: 'POST', body: form });
       data = await resp.json();
     } catch {
       return isFinal ? '' : undefined; // transient failure — try again next tick unless this was the final call
     }
     if (!resp.ok) return isFinal ? '' : undefined;
 
-    liveCaptionEl.textContent = data.text || 'Say something...';
+    lastOriginal = data.original && data.original !== data.text ? data.original : '';
+    liveCaptionEl.textContent = lastOriginal ? `${data.original}  →  ${data.text}` : (data.text || 'Say something...');
     textInput.value = data.text || '';
     if (data.text) lastTranscript = data.text;
     return data.text || '';
@@ -585,26 +948,306 @@ async function transcribeCurrentRecording(isFinal) {
   }
 }
 
+// --- Voice language ----------------------------------------------------------
+
+const langBtn = document.getElementById('langBtn');
+let voiceLang = 'en';
+try { voiceLang = localStorage.getItem('voiceLang') || 'en'; } catch { /* storage unavailable */ }
+
+function renderLang() {
+  langBtn.classList.toggle('on', voiceLang === 'hi');
+  langBtn.querySelector('span').textContent = voiceLang === 'hi' ? 'Voice: हिन्दी / Hinglish' : 'Voice: English';
+}
+langBtn.addEventListener('click', () => {
+  voiceLang = voiceLang === 'hi' ? 'en' : 'hi';
+  try { localStorage.setItem('voiceLang', voiceLang); } catch { /* storage unavailable */ }
+  renderLang();
+  if (voiceLang === 'hi') addSystemNote('Speak in Hindi or Hinglish — I\'ll show what I heard and the English question I understood. (First use loads a larger speech model, so it\'s slower.)');
+});
+renderLang();
+
+// --- Data health card + how uploaded files connect ---------------------------
+
+function showHealthCard(profile) {
+  const card = document.createElement('div');
+  card.className = 'health-card';
+  const cells = profile.row_count * profile.columns.length;
+  const emptyPct = cells ? Math.round(profile.empty_cells / cells * 100) : 0;
+
+  const h = document.createElement('h4');
+  h.textContent = `${profile.table} — ${profile.row_count.toLocaleString()} rows × ${profile.columns.length} columns`;
+  const badges = document.createElement('div');
+  badges.className = 'health-badges';
+  const mk = (text, warn) => {
+    const b = document.createElement('span');
+    b.className = 'badge-pill' + (warn ? ' warn' : '');
+    b.textContent = text;
+    return b;
+  };
+  badges.append(
+    mk(`${profile.duplicate_rows.toLocaleString()} duplicate row${profile.duplicate_rows === 1 ? '' : 's'}`, profile.duplicate_rows > 0),
+    mk(`${profile.empty_cells.toLocaleString()} empty cell${profile.empty_cells === 1 ? '' : 's'} (${emptyPct}%)`, profile.empty_cells > 0),
+  );
+
+  const table = document.createElement('table');
+  const head = document.createElement('tr');
+  ['column', 'type', 'empty', 'distinct values'].forEach(t => { const th = document.createElement('th'); th.textContent = t; head.appendChild(th); });
+  table.appendChild(head);
+  profile.columns.forEach(c => {
+    const tr = document.createElement('tr');
+    [c.name, c.type, c.empty, c.distinct.toLocaleString()].forEach((v, i) => {
+      const td = document.createElement('td');
+      td.textContent = v;
+      if (i === 2 && c.empty > 0) td.className = 'warn';
+      tr.appendChild(td);
+    });
+    table.appendChild(tr);
+  });
+  const scroll = document.createElement('div');
+  scroll.className = 'table-scroll';
+  scroll.appendChild(table);
+  card.append(h, badges, scroll);
+
+  // Cleaning commands that fit what was found, one click away.
+  const fixes = [];
+  if (profile.duplicate_rows > 0) fixes.push(`remove duplicate rows from ${profile.table}`);
+  profile.columns.filter(c => c.empty > 0).slice(0, 2).forEach(c => {
+    const numeric = c.type === 'INTEGER' || c.type === 'REAL';
+    fixes.push(`fill empty ${c.name} with ${numeric ? 'the average' : 'Unknown'} in ${profile.table}`);
+  });
+  if (fixes.length) {
+    const row = document.createElement('div');
+    row.className = 'suggest-row';
+    fillSuggestions(row, fixes);
+    row.firstChild.textContent = 'Clean it: ';
+    card.appendChild(row);
+  }
+
+  const bubble = addAssistantMessage();
+  bubble.replaceChildren(card);
+  scrollToBottom();
+}
+
+async function showRelationships(diagram) {
+  const bubble = addAssistantMessage();
+  const title = document.createElement('div');
+  title.className = 'er-title';
+  title.textContent = 'How your files connect';
+  const div = document.createElement('div');
+  div.className = 'mermaid';
+  div.textContent = diagram;
+  bubble.replaceChildren(title, div);
+  try { await mermaid.run({ nodes: [div] }); } catch { bubble.textContent = 'Couldn\'t draw the relationships between these files.'; }
+  scrollToBottom();
+}
+
+// After a cleaning command changes a table, bring the dataset chips back in sync.
+async function refreshDatasets() {
+  try {
+    const d = await (await fetch('/datasets')).json();
+    const alive = new Set(d.datasets.map(x => x.table));
+    datasets = datasets.filter(x => !x.uploaded || alive.has(x.name));
+    d.datasets.forEach(upsertDataset);
+    renderDatasets();
+    scheduleSuggestions();
+  } catch { /* the chips just stay as they were */ }
+}
+
+// --- Editing a result's SQL by hand --------------------------------------------
+
+function openSqlEditor(actionsWrap, data) {
+  const bubble = actionsWrap.parentElement;
+  const sqlEl = bubble.querySelector('.sql');
+  if (!sqlEl || bubble.querySelector('.sql-editor')) return;
+
+  const editor = document.createElement('div');
+  editor.className = 'sql-editor';
+  const area = document.createElement('textarea');
+  area.value = data.sql;
+  area.spellcheck = false;
+  const row = document.createElement('div');
+  row.className = 'editor-actions';
+  const run = document.createElement('button');
+  run.type = 'button'; run.className = 'primary'; run.textContent = 'Run';
+  const cancel = document.createElement('button');
+  cancel.type = 'button'; cancel.className = 'secondary'; cancel.textContent = 'Cancel';
+  const err = document.createElement('div');
+  err.className = 'editor-error';
+  row.append(run, cancel, err);
+  editor.append(area, row);
+  sqlEl.replaceWith(editor);
+  area.focus();
+
+  cancel.addEventListener('click', () => editor.replaceWith(sqlEl));
+  run.addEventListener('click', async () => {
+    err.textContent = '';
+    run.disabled = true;
+    try {
+      const resp = await fetch('/run-sql', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ sql: area.value, text: 'Edited SQL', tables: data.tables || ['sales'] }),
+      });
+      const result = await resp.json();
+      if (!resp.ok) { err.textContent = result.detail || 'That query failed.'; return; }
+      editor.replaceWith(sqlEl);
+      result.tables = data.tables;
+      addUserMessage('Run my edited SQL');
+      renderResult(addAssistantMessage(), result, {});
+      conversationHistory.push({ text: 'Edited SQL', sql: result.sql });
+      conversationHistory = conversationHistory.slice(-5);
+    } catch (e) {
+      err.textContent = `Request failed: ${e}`;
+    } finally {
+      run.disabled = false;
+    }
+  });
+}
+
+// --- Pinning results, and the printable report / dashboard ---------------------
+
+let idCounter = 0;
+const newId = () => `r${Date.now().toString(36)}${idCounter++}`;
+const sessionItems = [];           // everything shown in this chat, for the report
+let pinned = [];                   // saved in this browser, so the dashboard survives a reload
+try { pinned = JSON.parse(localStorage.getItem('pinnedResults') || '[]'); } catch { pinned = []; }
+const MAX_PINS = 20;
+const pinBadge = document.getElementById('pinBadge');
+
+function makeItem(data) {
+  return {
+    id: newId(), question: data.text, summary: data.summary || '', insights: data.insights || [],
+    sql: data.sql, columns: data.columns, rows: data.rows.slice(0, 40),
+    chart: data.is_mermaid ? data.chart : '', kind: data.chart_kind || '',
+  };
+}
+
+function savePins() {
+  renderPinBadge();
+  try { localStorage.setItem('pinnedResults', JSON.stringify(pinned)); }
+  catch { addSystemNote('Couldn\'t save your pins in this browser (storage is full or blocked).'); }
+}
+function renderPinBadge() {
+  pinBadge.hidden = !pinned.length;
+  pinBadge.textContent = pinned.length;
+}
+const isPinned = (item) => pinned.some(p => p.id === item.id);
+
+function togglePin(item) {
+  if (isPinned(item)) {
+    pinned = pinned.filter(p => p.id !== item.id);
+  } else {
+    if (pinned.length >= MAX_PINS) pinned.shift(); // keep the newest
+    pinned.push(JSON.parse(JSON.stringify(item))); // snapshot: chart type and summary as they are now
+  }
+  savePins();
+}
+
+const reportView = document.getElementById('reportView');
+const reportPage = document.getElementById('reportPage');
+let reportTab = 'pinned';
+let reportSeq = 0;
+
+async function renderReport() {
+  const items = reportTab === 'pinned' ? pinned : sessionItems;
+  reportView.querySelectorAll('.report-tabs .seg').forEach(b => b.classList.toggle('active', b.dataset.tab === reportTab));
+  reportPage.replaceChildren();
+
+  const h1 = document.createElement('h1');
+  h1.textContent = reportTab === 'pinned' ? 'Dashboard' : 'Voice-to-SQL report';
+  const meta = document.createElement('div');
+  meta.className = 'report-meta';
+  meta.textContent = `${new Date().toLocaleDateString(undefined, { dateStyle: 'long' })} · datasets: ${Array.from(selected).join(', ')} · ${items.length} result${items.length === 1 ? '' : 's'}`;
+  reportPage.append(h1, meta);
+
+  if (!items.length) {
+    const empty = document.createElement('div');
+    empty.className = 'report-empty';
+    empty.textContent = reportTab === 'pinned'
+      ? 'Nothing pinned yet — use the Pin button under any result to build a dashboard.'
+      : 'Nothing in this chat yet.';
+    reportPage.appendChild(empty);
+    return;
+  }
+
+  const grid = document.createElement('div');
+  grid.className = 'report-grid' + (reportTab === 'pinned' ? ' dashboard' : '');
+  reportPage.appendChild(grid);
+
+  for (const item of items) {
+    const card = document.createElement('div');
+    card.className = 'report-card';
+    const title = document.createElement('h3');
+    title.textContent = item.question;
+    card.appendChild(title);
+    if (reportTab === 'pinned') {
+      const unpin = document.createElement('button');
+      unpin.type = 'button'; unpin.className = 'unpin'; unpin.textContent = 'Unpin';
+      unpin.addEventListener('click', () => { pinned = pinned.filter(p => p.id !== item.id); savePins(); renderReport(); });
+      card.appendChild(unpin);
+    }
+    if (item.summary) {
+      const line = document.createElement('div');
+      line.className = 'answer-line';
+      line.textContent = item.summary;
+      card.appendChild(line);
+    }
+    if (item.insights && item.insights.length) card.appendChild(insightsBlock(item.insights));
+    grid.appendChild(card);
+
+    if (item.chart) {
+      const holder = document.createElement('div');
+      holder.className = 'chart-holder';
+      card.appendChild(holder);
+      try {
+        const { svg } = await mermaid.render(`rep${reportSeq++}`, item.chart);
+        holder.innerHTML = svg;
+      } catch { holder.textContent = '(chart unavailable)'; }
+    } else if (item.rows && item.rows.length) {
+      card.appendChild(tableBlock(item.columns, item.rows.slice(0, 12)));
+    }
+    if (item.sql) {
+      const sql = document.createElement('div');
+      sql.className = 'sql-small';
+      sql.textContent = item.sql;
+      card.appendChild(sql);
+    }
+  }
+}
+
+function openReport() {
+  reportTab = pinned.length ? 'pinned' : 'chat';
+  reportView.hidden = false;
+  renderReport();
+}
+document.getElementById('reportBtn').addEventListener('click', openReport);
+document.getElementById('reportClose').addEventListener('click', () => { reportView.hidden = true; });
+document.getElementById('reportPrint').addEventListener('click', () => window.print());
+reportView.querySelectorAll('.report-tabs .seg').forEach(b => b.addEventListener('click', () => { reportTab = b.dataset.tab; renderReport(); }));
+renderPinBadge();
+
 // --- Query execution -------------------------------------------------------
 
-async function sendMessage(text, confirm, existingBubble, forUserText) {
+async function sendMessage(text, confirm, existingBubble, forUserText, opts = {}) {
   if (!text.trim()) return;
+  if (canSpeak) speechSynthesis.cancel(); // a new question cuts off the previous answer
 
   let bubble;
   if (existingBubble) {
     bubble = existingBubble;
     bubble.innerHTML = '<div class="thinking"><span></span><span></span><span></span></div>';
   } else {
-    addUserMessage(text);
+    addUserMessage(text, opts.original);
     bubble = addAssistantMessage();
   }
 
+  const tablesUsed = Array.from(selected);
   let resp, data;
   try {
     resp = await fetch('/query', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ text: forUserText || text, confirm, history: conversationHistory, table: activeTable }),
+      body: JSON.stringify({ text: forUserText || text, confirm, history: conversationHistory, tables: tablesUsed, drill: opts.drill || null }),
     });
     data = await resp.json();
   } catch (err) {
@@ -622,7 +1265,8 @@ async function sendMessage(text, confirm, existingBubble, forUserText) {
     return;
   }
 
-  renderResult(bubble, data);
+  data.tables = tablesUsed; // so Explain uses the schema this answer was run against
+  renderResult(bubble, data, opts);
 
   conversationHistory.push({ text: forUserText || text, sql: data.sql });
   conversationHistory = conversationHistory.slice(-5);
@@ -631,12 +1275,12 @@ async function sendMessage(text, confirm, existingBubble, forUserText) {
 function renderConfirm(bubble, data, originalText) {
   bubble.innerHTML = '';
   bubble.appendChild(sqlBlock(data));
-  bubble.appendChild(tableBlock(data.columns, data.rows));
+  if (data.rows.length) bubble.appendChild(tableBlock(data.columns, data.rows));
 
   const box = document.createElement('div');
   box.className = 'confirm-box';
   const label = document.createElement('span');
-  label.textContent = `This will affect ${data.rows.length} row(s). Run it?`;
+  label.textContent = data.confirm_message || `This will affect ${data.rows.length} row(s). Run it?`;
   const yesBtn = document.createElement('button');
   yesBtn.className = 'primary';
   yesBtn.textContent = 'Yes, run it';
@@ -656,8 +1300,57 @@ function renderConfirm(bubble, data, originalText) {
   scrollToBottom();
 }
 
-function renderResult(bubble, data) {
+// The one-sentence answer for a result. `ctl.text` is filled in by the server
+// for the common shapes, or fetched from /summarize for the rest; Listen
+// buttons and auto-reading look at it whenever it changes.
+function answerLine(ctl, data, opts, showLine) {
+  const announce = () => { if (ctl.text && (opts.viaVoice || speakReplies)) speakText(ctl.text); };
+  if (ctl.text) {
+    announce();
+    if (!showLine) return null;
+    const el = document.createElement('div');
+    el.className = 'answer-line';
+    el.textContent = ctl.text;
+    return el;
+  }
+
+  const el = document.createElement('div');
+  el.className = 'answer-line loading';
+  el.textContent = 'Summarizing…';
+  fetch('/summarize', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ text: data.text, columns: data.columns, rows: data.rows.slice(0, 30) }),
+  })
+    .then(async (resp) => {
+      const body = await resp.json();
+      if (!resp.ok || !body.summary) throw new Error('no summary');
+      ctl.text = body.summary;
+      if (ctl.item) ctl.item.summary = body.summary;
+      el.textContent = body.summary;
+      el.classList.remove('loading');
+      announce();
+    })
+    .catch(() => el.remove()) // the result is still fully usable without it
+    .finally(() => { if (ctl.onChange) ctl.onChange(); });
+  return el;
+}
+
+function renderResult(bubble, data, opts = {}) {
   bubble.innerHTML = '';
+
+  if (data.notice) {
+    // A statement rather than a table: "Removed 2 duplicate rows from orders."
+    const line = document.createElement('div');
+    line.className = 'answer-line';
+    line.textContent = data.notice;
+    bubble.appendChild(line);
+    if (data.sql) bubble.appendChild(sqlBlock(data));
+    if (data.source === 'clean') refreshDatasets(); // row counts / columns may have changed
+    if (canSpeak && (opts.viaVoice || speakReplies)) speakText(data.notice);
+    scrollToBottom();
+    return;
+  }
 
   if (data.is_diagram) {
     // Explanatory diagram (flowchart/ER/sequence diagram of the dataset's
@@ -667,13 +1360,24 @@ function renderResult(bubble, data) {
     div.textContent = data.chart;
     bubble.appendChild(div);
     mermaid.run({ nodes: [div] }).then(scrollToBottom);
+    sessionItems.push({ id: newId(), question: data.text, summary: '', insights: [], sql: '', columns: [], rows: [], chart: data.chart, kind: 'diagram' });
     return;
   }
 
-  bubble.appendChild(sqlBlock(data));
-  bubble.appendChild(actionsBlock(data));
+  const isScalar = data.rows.length === 1 && data.columns.length === 1;
+  const item = makeItem(data);
+  sessionItems.push(item);
+  const ctl = { text: data.summary || '', onChange: null, item };
 
-  if (data.rows.length === 1 && data.columns.length === 1) {
+  // A scalar already *is* the answer, shown big below — no sentence needed
+  // (though its text is still there for Listen / voice replies).
+  const line = answerLine(ctl, data, opts, !isScalar && data.rows.length > 0);
+  if (line) bubble.appendChild(line);
+  if (data.insights && data.insights.length) bubble.appendChild(insightsBlock(data.insights));
+  bubble.appendChild(sqlBlock(data));
+  bubble.appendChild(actionsBlock(data, ctl, item));
+
+  if (isScalar) {
     const div = document.createElement('div');
     div.className = 'scalar';
     div.textContent = `${data.columns[0]}: ${data.rows[0][0]}`;
@@ -682,15 +1386,141 @@ function renderResult(bubble, data) {
     return;
   }
 
-  if (data.is_mermaid) {
-    const div = document.createElement('div');
-    div.className = 'mermaid';
-    div.textContent = data.chart;
-    bubble.appendChild(div);
-    mermaid.run({ nodes: [div] }).then(scrollToBottom);
-  }
+  // Bars/slices are only worth clicking when each one is a category with a number.
+  data.drillable = data.columns.length === 2 && data.rows.length >= 2 && data.rows.length <= 25
+    && data.rows.every(r => typeof r[1] === 'number');
+
+  if (data.is_mermaid) bubble.appendChild(chartBlock(data, item));
   bubble.appendChild(tableBlock(data.columns, data.rows));
   scrollToBottom();
+}
+
+function insightsBlock(list) {
+  const wrap = document.createElement('div');
+  wrap.className = 'insights';
+  const icons = { up: '▲', down: '▼', info: '●' };
+  list.forEach(i => {
+    const pill = document.createElement('div');
+    pill.className = `insight ${i.kind}`;
+    const ico = document.createElement('span');
+    ico.className = 'ico';
+    ico.textContent = icons[i.kind] || '●';
+    const text = document.createElement('span');
+    text.textContent = i.text;
+    pill.append(ico, text);
+    wrap.appendChild(pill);
+  });
+  return wrap;
+}
+
+const CHART_LABELS = { bar: 'Bar', line: 'Line', pie: 'Pie', forecast: 'Forecast' };
+
+// Mermaid has no dashed lines and, for the forecast's shorter "history" series,
+// emits NaN path data — so after drawing, trim the broken segment, color the
+// history solid green and the forecast dashed gold.
+function styleForecast(div) {
+  const svg = div.querySelector('svg');
+  if (!svg) return;
+  const forecast = svg.querySelector('g.line-plot-0 path');
+  const history = svg.querySelector('g.line-plot-1 path');
+  if (history) {
+    const parts = history.getAttribute('d').split('L');
+    const firstBad = parts.findIndex(p => p.includes('NaN'));
+    history.setAttribute('d', (firstBad === -1 ? parts : parts.slice(0, firstBad)).join('L'));
+    history.style.stroke = '#1c3324';
+    history.style.strokeWidth = '2.5';
+  }
+  if (forecast) {
+    forecast.style.stroke = '#b6884c';
+    forecast.style.strokeWidth = '2.5';
+    forecast.style.strokeDasharray = '8 6';
+  }
+}
+
+// Click a bar or pie slice to break that value down further.
+function wireDrill(div, kind, data) {
+  const svg = div.querySelector('svg');
+  if (!svg || !data.drillable) return false;
+  const sanitize = v => (v === null ? '(empty)' : String(v).replace(/"/g, "'").replace(/\n/g, ' '));
+  const originals = new Map(data.rows.map(r => [sanitize(r[0]), r[0]]));
+  const attach = (el, value) => {
+    if (!el || value === null || value === undefined) return;
+    el.classList.add('drillable');
+    const tip = document.createElementNS('http://www.w3.org/2000/svg', 'title');
+    tip.textContent = `Click to break down ${value}`;
+    el.appendChild(tip);
+    el.addEventListener('click', () => drillDown(data, value));
+  };
+  if (kind === 'bar') {
+    svg.querySelectorAll('g.bar-plot-0 rect').forEach((rect, i) => attach(rect, data.rows[i] && data.rows[i][0]));
+    return true;
+  }
+  if (kind === 'pie') {
+    const slices = svg.querySelectorAll('.pieCircle');
+    svg.querySelectorAll('.legend text').forEach((label, i) => {
+      const value = originals.get(label.textContent);
+      attach(slices[i], value);
+      attach(label, value);
+    });
+    return true;
+  }
+  return false;
+}
+
+function drillDown(data, value) {
+  sendMessage(`Break down “${value}” further`, false, undefined, undefined,
+    { drill: { column: data.columns[0], value: String(value) } });
+}
+
+// The chart, with a Bar/Line/Pie/Forecast switcher when more than one type suits the data.
+function chartBlock(data, item) {
+  const charts = Object.keys(data.charts || {}).length ? data.charts : { chart: data.chart };
+  const kinds = Object.keys(charts);
+  const wrap = document.createElement('div');
+  const holder = document.createElement('div');
+  const note = document.createElement('div');
+  note.className = 'chart-note';
+
+  const draw = (kind) => {
+    const div = document.createElement('div');
+    div.className = 'mermaid';
+    div.textContent = charts[kind];
+    holder.replaceChildren(div);
+    if (item) { item.chart = charts[kind]; item.kind = kind; } // pins/reports keep the view that was showing
+    note.textContent = '';
+    mermaid.run({ nodes: [div] })
+      .then(() => {
+        if (kind === 'forecast') {
+          styleForecast(div);
+          const fc = data.forecast;
+          note.textContent = `Solid: actual · dashed: forecast (${fc.labels.map((l, i) => `${l}: ${fc.values[i].toLocaleString()}`).join(' · ')})`;
+        } else if (wireDrill(div, kind, data)) {
+          note.textContent = kind === 'pie' ? 'Click a slice to break it down further' : 'Click a bar to break it down further';
+        }
+        scrollToBottom();
+      })
+      .catch(() => { holder.textContent = `Couldn't draw this as a ${CHART_LABELS[kind] || 'chart'} chart.`; });
+  };
+
+  if (kinds.length > 1) {
+    const toggle = document.createElement('div');
+    toggle.className = 'chart-toggle';
+    kinds.forEach(kind => {
+      const btn = document.createElement('button');
+      btn.type = 'button';
+      btn.className = 'seg' + (kind === data.chart_kind ? ' active' : '');
+      btn.textContent = CHART_LABELS[kind] || kind;
+      btn.addEventListener('click', () => {
+        toggle.querySelectorAll('.seg').forEach(b => b.classList.toggle('active', b === btn));
+        draw(kind);
+      });
+      toggle.appendChild(btn);
+    });
+    wrap.appendChild(toggle);
+  }
+  wrap.append(holder, note);
+  draw(data.chart_kind in charts ? data.chart_kind : kinds[0]);
+  return wrap;
 }
 
 function sqlBlock(data) {
@@ -733,7 +1563,19 @@ function explainIcon() {
   return '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M9.5 9a2.5 2.5 0 0 1 5 0c0 1.5-2 2-2 3.5"/><path d="M12 17h.01"/></svg>';
 }
 
-function actionsBlock(data) {
+function editIcon() {
+  return '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4z"/></svg>';
+}
+
+function pinIcon() {
+  return '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 17v5"/><path d="M9 3h6l-1 7 3 3v2H7v-2l3-3z"/></svg>';
+}
+
+function listenIcon() {
+  return '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 5L6 9H2v6h4l5 4V5z"/><path d="M15.5 8.5a5 5 0 0 1 0 7"/></svg>';
+}
+
+function actionsBlock(data, ctl, item) {
   const wrap = document.createElement('div');
   wrap.className = 'result-actions';
 
@@ -773,7 +1615,7 @@ function actionsBlock(data) {
       const resp = await fetch('/explain-sql', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ sql: data.sql, text: data.text || '', table: activeTable }),
+        body: JSON.stringify({ sql: data.sql, text: data.text || '', tables: data.tables || ['sales'] }),
       });
       const result = await resp.json();
       message = resp.ok ? result.explanation : (result.detail || `Request failed (${resp.status}).`);
@@ -790,7 +1632,44 @@ function actionsBlock(data) {
   });
   wrap.appendChild(explainBtn);
 
+  const editBtn = document.createElement('button');
+  editBtn.type = 'button';
+  editBtn.className = 'action-btn';
+  editBtn.innerHTML = `${editIcon()}<span>Edit SQL</span>`;
+  editBtn.addEventListener('click', () => openSqlEditor(wrap, data));
+  wrap.appendChild(editBtn);
+
+  const pinBtn = document.createElement('button');
+  pinBtn.type = 'button';
+  pinBtn.className = 'action-btn';
+  const paintPin = () => { pinBtn.innerHTML = `${pinIcon()}<span>${isPinned(item) ? 'Pinned' : 'Pin'}</span>`; };
+  paintPin();
+  pinBtn.addEventListener('click', () => { togglePin(item); paintPin(); });
+  wrap.appendChild(pinBtn);
+
+  if (canSpeak) {
+    const listenBtn = document.createElement('button');
+    listenBtn.type = 'button';
+    listenBtn.className = 'action-btn';
+    listenBtn.innerHTML = `${listenIcon()}<span>Listen</span>`;
+    listenBtn.disabled = !ctl.text; // enabled once the sentence has arrived
+    ctl.onChange = () => { listenBtn.disabled = !ctl.text; };
+    listenBtn.addEventListener('click', () => {
+      if (listenBtn.dataset.speaking) speechSynthesis.cancel();
+      else speakText(ctl.text, listenBtn);
+    });
+    wrap.appendChild(listenBtn);
+  }
+
   return wrap;
+}
+
+// Display only: long floats (35.78947368421053) are noise in a table. The CSV
+// download uses the raw values.
+function displayCell(v) {
+  if (v === null) return '';
+  if (typeof v === 'number' && !Number.isInteger(v)) return v.toLocaleString(undefined, { maximumFractionDigits: 2 });
+  return v;
 }
 
 function tableBlock(columns, rows) {
@@ -806,7 +1685,7 @@ function tableBlock(columns, rows) {
   table.appendChild(thead);
   rows.slice(0, 200).forEach(row => {
     const tr = document.createElement('tr');
-    row.forEach(v => { const td = document.createElement('td'); td.textContent = v === null ? '' : v; tr.appendChild(td); });
+    row.forEach(v => { const td = document.createElement('td'); td.textContent = displayCell(v); tr.appendChild(td); });
     table.appendChild(tr);
   });
   wrap.appendChild(table);

@@ -11,18 +11,17 @@ import numpy as np
 import sounddevice as sd
 from scipy.io.wavfile import write as write_wav
 
-from app.config import RECORD_SECONDS, SAMPLE_RATE, WHISPER_MODEL_SIZE
+from app.config import RECORD_SECONDS, SAMPLE_RATE, WHISPER_MODEL_SIZE, WHISPER_MULTILINGUAL_MODEL_SIZE
 
-_model = None  # lazy-loaded singleton, loading the model takes a few seconds
+_models: dict[str, object] = {}  # lazy-loaded per size, loading a model takes a few seconds
 
 
-def _get_model():
-    global _model
-    if _model is None:
+def _get_model(size: str):
+    if size not in _models:
         from faster_whisper import WhisperModel
 
-        _model = WhisperModel(WHISPER_MODEL_SIZE, device="cpu", compute_type="int8")
-    return _model
+        _models[size] = WhisperModel(size, device="cpu", compute_type="int8")
+    return _models[size]
 
 
 def record_audio(seconds: int = RECORD_SECONDS) -> Path:
@@ -35,11 +34,24 @@ def record_audio(seconds: int = RECORD_SECONDS) -> Path:
     return tmp
 
 
+def transcribe_with_info(path: Path, multilingual: bool = False) -> tuple[str, str]:
+    """Transcribe an audio file. Returns (text, detected_language_code).
+
+    `multilingual` uses a larger model and lets Whisper detect the language,
+    returning the text in the language that was spoken (Hindi in Devanagari,
+    or romanized Hinglish). It is *not* translated here: Whisper's own
+    translate task garbles Hindi, so nl2sql.translate_question has the LLM do
+    that step, with the table schema to fix mishearings.
+    """
+    model = _get_model(WHISPER_MULTILINGUAL_MODEL_SIZE if multilingual else WHISPER_MODEL_SIZE)
+    segments, info = model.transcribe(str(path))
+    text = " ".join(seg.text.strip() for seg in segments).strip()
+    return text, info.language
+
+
 def transcribe_file(path: Path) -> str:
     """Transcribe an existing wav/mp3/etc. file to text."""
-    model = _get_model()
-    segments, _info = model.transcribe(str(path))
-    return " ".join(seg.text.strip() for seg in segments).strip()
+    return transcribe_with_info(path)[0]
 
 
 def record_and_transcribe(seconds: int = RECORD_SECONDS) -> str:

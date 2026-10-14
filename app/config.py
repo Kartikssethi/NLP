@@ -13,6 +13,10 @@ SALES_CSV_PATH = os.environ.get("NLP_SALES_CSV", "mobile_sales_data.csv")
 # faster-whisper model size: tiny / base / small / medium / large-v3
 # "base" is a good speed/accuracy tradeoff on a laptop CPU.
 WHISPER_MODEL_SIZE = os.environ.get("NLP_WHISPER_MODEL", "base")
+# Hindi/Hinglish mode transcribes in the spoken language and has the LLM turn
+# that into an English question. The "base" model is poor at Hindi, so
+# non-English speech gets its own, bigger model (a one-time ~460 MB download).
+WHISPER_MULTILINGUAL_MODEL_SIZE = os.environ.get("NLP_WHISPER_MULTILINGUAL_MODEL", "small")
 RECORD_SECONDS = int(os.environ.get("NLP_RECORD_SECONDS", "30"))
 SAMPLE_RATE = 16000
 
