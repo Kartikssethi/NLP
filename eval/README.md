@@ -58,6 +58,14 @@ Needs a reachable Ollama model (`NLP_OLLAMA_MODEL`, default `gemma4:31b-cloud`).
 parallel calls. Results are saved per question, so `eval.report` can be re-run
 and every failure inspected without calling the model again.
 
+## Results
+
+`RESULTS.md` has the consolidated tables and error analysis. In `results/`:
+`v1.json` / `v2.json` are the main benchmark before and after the fixes found
+by error analysis, `heldout_v1.json` / `heldout_v2.json` likewise for the
+held-out set; `run.json` and `heldout.json` are copies of the final (v2) runs,
+and each has a `*_report.md`. v1 is the system at commit `abd9d21`.
+
 ## Caveats
 
 * Gold SQL and questions were written by the system's author, who also wrote

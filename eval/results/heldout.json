@@ -1,0 +1,2117 @@
+{
+ "model": "gemma4:31b-cloud",
+ "questions": [
+  {
+   "id": "T01",
+   "category": "count",
+   "question": "Number of Nokia phones in the south",
+   "gold_sql": "SELECT COUNT(*) FROM sales WHERE brand='Nokia' AND product='Mobile Phone' AND region='South'",
+   "dataset": "sales",
+   "tables": [
+    "sales"
+   ]
+  },
+  {
+   "id": "T02",
+   "category": "scalar_agg",
+   "question": "What's the mean price for Toshiba laptops?",
+   "gold_sql": "SELECT AVG(price) FROM sales WHERE brand='Toshiba' AND product='Laptop'",
+   "dataset": "sales",
+   "tables": [
+    "sales"
+   ]
+  },
+  {
+   "id": "T03",
+   "category": "group_by",
+   "question": "Give me total units by brand for the central region",
+   "gold_sql": "SELECT brand, SUM(quantity_sold) FROM sales WHERE region='Central' GROUP BY brand",
+   "dataset": "sales",
+   "tables": [
+    "sales"
+   ]
+  },
+  {
+   "id": "T04",
+   "category": "top_n",
+   "question": "Which three brands have the highest average price?",
+   "gold_sql": "SELECT brand, AVG(price) AS a FROM sales GROUP BY brand ORDER BY a DESC LIMIT 3",
+   "dataset": "sales",
+   "tables": [
+    "sales"
+   ]
+  },
+  {
+   "id": "T05",
+   "category": "filter_cmp",
+   "question": "How many laptops cost more than 150000?",
+   "gold_sql": "SELECT COUNT(*) FROM sales WHERE product='Laptop' AND price > 150000",
+   "dataset": "sales",
+   "tables": [
+    "sales"
+   ]
+  },
+  {
+   "id": "T06",
+   "category": "filter_cmp",
+   "question": "How many phones cost under 20000?",
+   "gold_sql": "SELECT COUNT(*) FROM sales WHERE product='Mobile Phone' AND price < 20000",
+   "dataset": "sales",
+   "tables": [
+    "sales"
+   ]
+  },
+  {
+   "id": "T07",
+   "category": "group_by",
+   "question": "total quantity sold for each product",
+   "gold_sql": "SELECT product, SUM(quantity_sold) FROM sales GROUP BY product",
+   "dataset": "sales",
+   "tables": [
+    "sales"
+   ]
+  },
+  {
+   "id": "T08",
+   "category": "multi_value",
+   "question": "What is the combined quantity sold for Apple and Samsung?",
+   "gold_sql": "SELECT SUM(quantity_sold) FROM sales WHERE brand IN ('Apple', 'Samsung')",
+   "dataset": "sales",
+   "tables": [
+    "sales"
+   ]
+  },
+  {
+   "id": "T09",
+   "category": "group_by",
+   "question": "number of laptop sales records per region",
+   "gold_sql": "SELECT region, COUNT(*) FROM sales WHERE product='Laptop' GROUP BY region",
+   "dataset": "sales",
+   "tables": [
+    "sales"
+   ]
+  },
+  {
+   "id": "T10",
+   "category": "superlative",
+   "question": "Which region has the fewest sales records?",
+   "gold_sql": "SELECT region FROM sales GROUP BY region ORDER BY COUNT(*) ASC LIMIT 1",
+   "dataset": "sales",
+   "tables": [
+    "sales"
+   ]
+  },
+  {
+   "id": "T11",
+   "category": "exclusion",
+   "question": "average price of laptops excluding Apple",
+   "gold_sql": "SELECT AVG(price) FROM sales WHERE product='Laptop' AND brand != 'Apple'",
+   "dataset": "sales",
+   "tables": [
+    "sales"
+   ]
+  },
+  {
+   "id": "T12",
+   "category": "temporal",
+   "question": "How many sales records were dispatched between 2024-01-01 and 2024-03-31?",
+   "gold_sql": "SELECT COUNT(*) FROM sales WHERE dispatch_date >= '2024-01-01' AND dispatch_date <= '2024-03-31'",
+   "dataset": "sales",
+   "tables": [
+    "sales"
+   ]
+  },
+  {
+   "id": "T13",
+   "category": "compound",
+   "question": "What is the highest total quantity sold by a single brand?",
+   "gold_sql": "SELECT MAX(t) FROM (SELECT SUM(quantity_sold) AS t FROM sales GROUP BY brand)",
+   "dataset": "sales",
+   "tables": [
+    "sales"
+   ]
+  },
+  {
+   "id": "T14",
+   "category": "compound",
+   "question": "How many different brands are there?",
+   "gold_sql": "SELECT COUNT(DISTINCT brand) FROM sales",
+   "dataset": "sales",
+   "tables": [
+    "sales"
+   ]
+  },
+  {
+   "id": "T15",
+   "category": "compound",
+   "question": "Which regions have more than 10000 sales records?",
+   "gold_sql": "SELECT region FROM sales GROUP BY region HAVING COUNT(*) > 10000",
+   "dataset": "sales",
+   "tables": [
+    "sales"
+   ]
+  },
+  {
+   "id": "T16",
+   "category": "superlative",
+   "question": "Which phone brand has the highest average price?",
+   "gold_sql": "SELECT brand FROM sales WHERE product='Mobile Phone' GROUP BY brand ORDER BY AVG(price) DESC LIMIT 1",
+   "dataset": "sales",
+   "tables": [
+    "sales"
+   ]
+  },
+  {
+   "id": "T17",
+   "category": "compound",
+   "question": "total revenue for Apple (price times quantity)",
+   "gold_sql": "SELECT SUM(price * quantity_sold) FROM sales WHERE brand='Apple'",
+   "dataset": "sales",
+   "tables": [
+    "sales"
+   ]
+  },
+  {
+   "id": "T18",
+   "category": "compound",
+   "question": "What percentage of sales records are from the west region?",
+   "gold_sql": "SELECT 100.0 * SUM(region='West') / COUNT(*) FROM sales",
+   "dataset": "sales",
+   "tables": [
+    "sales"
+   ]
+  },
+  {
+   "id": "T19",
+   "category": "group_by",
+   "question": "average price by RAM size for phones",
+   "gold_sql": "SELECT ram, AVG(price) FROM sales WHERE product='Mobile Phone' GROUP BY ram",
+   "dataset": "sales",
+   "tables": [
+    "sales"
+   ]
+  },
+  {
+   "id": "T20",
+   "category": "count",
+   "question": "How many sales records are there in total?",
+   "gold_sql": "SELECT COUNT(*) FROM sales",
+   "dataset": "sales",
+   "tables": [
+    "sales"
+   ]
+  },
+  {
+   "id": "U01",
+   "category": "single_table",
+   "question": "How many products are in the Office category?",
+   "gold_sql": "SELECT COUNT(*) FROM products WHERE category='Office'",
+   "dataset": "multi",
+   "tables": [
+    "customers",
+    "products",
+    "orders",
+    "orders_archive"
+   ]
+  },
+  {
+   "id": "U02",
+   "category": "join2",
+   "question": "Total quantity ordered by bronze customers",
+   "gold_sql": "SELECT SUM(o.quantity) FROM orders o JOIN customers c ON o.customer_id = c.id WHERE c.tier='bronze'",
+   "dataset": "multi",
+   "tables": [
+    "customers",
+    "products",
+    "orders",
+    "orders_archive"
+   ]
+  },
+  {
+   "id": "U03",
+   "category": "single_table",
+   "question": "How many orders were cancelled?",
+   "gold_sql": "SELECT COUNT(*) FROM orders WHERE status='cancelled'",
+   "dataset": "multi",
+   "tables": [
+    "customers",
+    "products",
+    "orders",
+    "orders_archive"
+   ]
+  },
+  {
+   "id": "U04",
+   "category": "single_table",
+   "question": "Which tier has the most customers?",
+   "gold_sql": "SELECT tier FROM customers GROUP BY tier ORDER BY COUNT(*) DESC LIMIT 1",
+   "dataset": "multi",
+   "tables": [
+    "customers",
+    "products",
+    "orders",
+    "orders_archive"
+   ]
+  },
+  {
+   "id": "U05",
+   "category": "single_table",
+   "question": "Average price of Electronics products",
+   "gold_sql": "SELECT AVG(price) FROM products WHERE category='Electronics'",
+   "dataset": "multi",
+   "tables": [
+    "customers",
+    "products",
+    "orders",
+    "orders_archive"
+   ]
+  },
+  {
+   "id": "U06",
+   "category": "join2",
+   "question": "How many orders did customers from Chennai place?",
+   "gold_sql": "SELECT COUNT(*) FROM orders o JOIN customers c ON o.customer_id = c.id WHERE c.city='Chennai'",
+   "dataset": "multi",
+   "tables": [
+    "customers",
+    "products",
+    "orders",
+    "orders_archive"
+   ]
+  },
+  {
+   "id": "U07",
+   "category": "join3",
+   "question": "Total revenue from orders placed in 2025",
+   "gold_sql": "SELECT SUM(o.quantity * p.price) FROM orders o JOIN products p ON o.product_id = p.id WHERE o.order_date >= '2025-01-01'",
+   "dataset": "multi",
+   "tables": [
+    "customers",
+    "products",
+    "orders",
+    "orders_archive"
+   ]
+  },
+  {
+   "id": "U08",
+   "category": "single_table",
+   "question": "Which customers from Jaipur are gold tier?",
+   "gold_sql": "SELECT name FROM customers WHERE city='Jaipur' AND tier='gold'",
+   "dataset": "multi",
+   "tables": [
+    "customers",
+    "products",
+    "orders",
+    "orders_archive"
+   ]
+  },
+  {
+   "id": "U09",
+   "category": "join2_products",
+   "question": "Number of orders per product category",
+   "gold_sql": "SELECT p.category, COUNT(*) FROM orders o JOIN products p ON o.product_id = p.id GROUP BY p.category",
+   "dataset": "multi",
+   "tables": [
+    "customers",
+    "products",
+    "orders",
+    "orders_archive"
+   ]
+  },
+  {
+   "id": "U10",
+   "category": "join2",
+   "question": "How many customers placed more than 12 orders?",
+   "gold_sql": "SELECT COUNT(*) FROM (SELECT customer_id FROM orders GROUP BY customer_id HAVING COUNT(*) > 12)",
+   "dataset": "multi",
+   "tables": [
+    "customers",
+    "products",
+    "orders",
+    "orders_archive"
+   ]
+  },
+  {
+   "id": "U11",
+   "category": "join2_products",
+   "question": "What is the total revenue for cancelled orders?",
+   "gold_sql": "SELECT SUM(o.quantity * p.price) FROM orders o JOIN products p ON o.product_id = p.id WHERE o.status='cancelled'",
+   "dataset": "multi",
+   "tables": [
+    "customers",
+    "products",
+    "orders",
+    "orders_archive"
+   ]
+  },
+  {
+   "id": "U12",
+   "category": "join2_products",
+   "question": "Which product has been ordered the most units?",
+   "gold_sql": "SELECT p.product_name FROM orders o JOIN products p ON o.product_id = p.id GROUP BY p.id ORDER BY SUM(o.quantity) DESC LIMIT 1",
+   "dataset": "multi",
+   "tables": [
+    "customers",
+    "products",
+    "orders",
+    "orders_archive"
+   ]
+  },
+  {
+   "id": "U13",
+   "category": "merge",
+   "question": "Combine both order tables and count the orders for each status",
+   "gold_sql": "SELECT status, COUNT(*) FROM (SELECT status FROM orders UNION ALL SELECT status FROM orders_archive) GROUP BY status",
+   "dataset": "multi",
+   "tables": [
+    "customers",
+    "products",
+    "orders",
+    "orders_archive"
+   ]
+  },
+  {
+   "id": "U14",
+   "category": "single_table",
+   "question": "How many orders are in the archive?",
+   "gold_sql": "SELECT COUNT(*) FROM orders_archive",
+   "dataset": "multi",
+   "tables": [
+    "customers",
+    "products",
+    "orders",
+    "orders_archive"
+   ]
+  },
+  {
+   "id": "U15",
+   "category": "merge",
+   "question": "Total quantity ordered in 2023",
+   "gold_sql": "SELECT SUM(quantity) FROM (SELECT quantity, order_date FROM orders UNION ALL SELECT quantity, order_date FROM orders_archive) WHERE order_date >= '2023-01-01' AND order_date < '2024-01-01'",
+   "dataset": "multi",
+   "tables": [
+    "customers",
+    "products",
+    "orders",
+    "orders_archive"
+   ]
+  },
+  {
+   "id": "U16",
+   "category": "join2",
+   "question": "Which cities have more than 21 returned orders?",
+   "gold_sql": "SELECT c.city FROM orders o JOIN customers c ON o.customer_id = c.id WHERE o.status='returned' GROUP BY c.city HAVING COUNT(*) > 21",
+   "dataset": "multi",
+   "tables": [
+    "customers",
+    "products",
+    "orders",
+    "orders_archive"
+   ]
+  },
+  {
+   "id": "U17",
+   "category": "join3",
+   "question": "Average spend per customer who has ordered",
+   "gold_sql": "SELECT SUM(o.quantity * p.price) * 1.0 / COUNT(DISTINCT o.customer_id) FROM orders o JOIN products p ON o.product_id = p.id",
+   "dataset": "multi",
+   "tables": [
+    "customers",
+    "products",
+    "orders",
+    "orders_archive"
+   ]
+  },
+  {
+   "id": "U18",
+   "category": "join2_products",
+   "question": "How many orders contain products priced above 50000?",
+   "gold_sql": "SELECT COUNT(*) FROM orders o JOIN products p ON o.product_id = p.id WHERE p.price > 50000",
+   "dataset": "multi",
+   "tables": [
+    "customers",
+    "products",
+    "orders",
+    "orders_archive"
+   ]
+  },
+  {
+   "id": "U19",
+   "category": "join2",
+   "question": "For each tier, how many different customers have placed an order?",
+   "gold_sql": "SELECT c.tier, COUNT(DISTINCT o.customer_id) FROM orders o JOIN customers c ON o.customer_id = c.id GROUP BY c.tier",
+   "dataset": "multi",
+   "tables": [
+    "customers",
+    "products",
+    "orders",
+    "orders_archive"
+   ]
+  },
+  {
+   "id": "U20",
+   "category": "join2",
+   "question": "How many orders in 2024 were placed by silver customers?",
+   "gold_sql": "SELECT COUNT(*) FROM orders o JOIN customers c ON o.customer_id = c.id WHERE c.tier='silver' AND o.order_date >= '2024-01-01' AND o.order_date < '2025-01-01'",
+   "dataset": "multi",
+   "tables": [
+    "customers",
+    "products",
+    "orders",
+    "orders_archive"
+   ]
+  }
+ ],
+ "results": {
+  "T01": {
+   "rule": {
+    "sql": null,
+    "source": "rule",
+    "gen_s": 0.0005834169860463589,
+    "error": null,
+    "valid": false,
+    "strict": false,
+    "lenient": false
+   },
+   "plain": {
+    "sql": "SELECT count(*) FROM sales WHERE brand = 'Nokia' AND region = 'south'",
+    "source": "plain",
+    "gen_s": 1.1249077919928823,
+    "error": null,
+    "valid": true,
+    "strict": false,
+    "lenient": false,
+    "n_rows": 1
+   },
+   "llm": {
+    "sql": "SELECT COUNT(*) AS count FROM sales WHERE LOWER(product) = 'mobile phone' AND LOWER(brand) = 'nokia' AND LOWER(region) = 'south'",
+    "source": "ollama",
+    "gen_s": 1.7828021250024904,
+    "error": null,
+    "valid": true,
+    "strict": true,
+    "lenient": true,
+    "n_rows": 1
+   },
+   "hybrid": {
+    "sql": "SELECT COUNT(*) FROM sales WHERE LOWER(product) = 'mobile phone' AND LOWER(brand) = 'nokia' AND LOWER(region) = 'south'",
+    "source": "ollama",
+    "gen_s": 0.9164367920020595,
+    "error": null,
+    "valid": true,
+    "strict": true,
+    "lenient": true,
+    "n_rows": 1
+   }
+  },
+  "T02": {
+   "rule": {
+    "sql": "SELECT AVG(price) AS average_price FROM sales WHERE LOWER(product) = 'laptop' AND LOWER(brand) = 'toshiba'",
+    "source": "rule",
+    "gen_s": 0.000336958997650072,
+    "error": null,
+    "valid": true,
+    "strict": true,
+    "lenient": true,
+    "n_rows": 1
+   },
+   "plain": {
+    "sql": "SELECT AVG(price) FROM sales WHERE brand = 'Toshiba'",
+    "source": "plain",
+    "gen_s": 0.6139255420130212,
+    "error": null,
+    "valid": true,
+    "strict": false,
+    "lenient": false,
+    "n_rows": 1
+   },
+   "llm": {
+    "sql": "SELECT AVG(price) AS avg_price FROM sales WHERE LOWER(product) = 'laptop' AND LOWER(brand) = 'toshiba'",
+    "source": "ollama",
+    "gen_s": 0.9159071249887347,
+    "error": null,
+    "valid": true,
+    "strict": true,
+    "lenient": true,
+    "n_rows": 1
+   },
+   "hybrid": {
+    "sql": "SELECT AVG(price) AS average_price FROM sales WHERE LOWER(product) = 'laptop' AND LOWER(brand) = 'toshiba'",
+    "source": "rule",
+    "gen_s": 0.0001604999997653067,
+    "error": null,
+    "valid": true,
+    "strict": true,
+    "lenient": true,
+    "n_rows": 1
+   }
+  },
+  "T03": {
+   "rule": {
+    "sql": "SELECT brand, SUM(quantity_sold) AS sum_quantity_sold FROM sales WHERE LOWER(region) = 'central' GROUP BY brand ORDER BY sum_quantity_sold DESC",
+    "source": "rule",
+    "gen_s": 0.0002299170009791851,
+    "error": null,
+    "valid": true,
+    "strict": true,
+    "lenient": true,
+    "n_rows": 20
+   },
+   "plain": {
+    "sql": "SELECT brand, SUM(quantity_sold) \nFROM sales \nWHERE region = 'central' \nGROUP BY brand",
+    "source": "plain",
+    "gen_s": 0.6715879589901306,
+    "error": null,
+    "valid": true,
+    "strict": false,
+    "lenient": false,
+    "n_rows": 0
+   },
+   "llm": {
+    "sql": "SELECT brand, SUM(quantity_sold) FROM sales WHERE LOWER(region) = 'central' GROUP BY brand",
+    "source": "ollama",
+    "gen_s": 0.8370827920152806,
+    "error": null,
+    "valid": true,
+    "strict": true,
+    "lenient": true,
+    "n_rows": 20
+   },
+   "hybrid": {
+    "sql": "SELECT brand, SUM(quantity_sold) AS sum_quantity_sold FROM sales WHERE LOWER(region) = 'central' GROUP BY brand ORDER BY sum_quantity_sold DESC",
+    "source": "rule",
+    "gen_s": 0.00012908398639410734,
+    "error": null,
+    "valid": true,
+    "strict": true,
+    "lenient": true,
+    "n_rows": 20
+   }
+  },
+  "T04": {
+   "rule": {
+    "sql": null,
+    "source": "rule",
+    "gen_s": 2.9208982596173882e-05,
+    "error": null,
+    "valid": false,
+    "strict": false,
+    "lenient": false
+   },
+   "plain": {
+    "sql": "SELECT brand \nFROM sales \nGROUP BY brand \nORDER BY AVG(price) DESC \nLIMIT 3",
+    "source": "plain",
+    "gen_s": 0.8252822500071488,
+    "error": null,
+    "valid": true,
+    "strict": false,
+    "lenient": false,
+    "n_rows": 3
+   },
+   "llm": {
+    "sql": "SELECT brand, AVG(price) AS avg_price FROM sales GROUP BY brand ORDER BY avg_price DESC LIMIT 3",
+    "source": "ollama",
+    "gen_s": 0.6529773340153042,
+    "error": null,
+    "valid": true,
+    "strict": true,
+    "lenient": true,
+    "n_rows": 3
+   },
+   "hybrid": {
+    "sql": "SELECT brand, AVG(price) AS avg_price FROM sales GROUP BY brand ORDER BY avg_price DESC LIMIT 3",
+    "source": "ollama",
+    "gen_s": 0.7266604590113275,
+    "error": null,
+    "valid": true,
+    "strict": true,
+    "lenient": true,
+    "n_rows": 3
+   }
+  },
+  "T05": {
+   "rule": {
+    "sql": null,
+    "source": "rule",
+    "gen_s": 0.00013000000035390258,
+    "error": null,
+    "valid": false,
+    "strict": false,
+    "lenient": false
+   },
+   "plain": {
+    "sql": "SELECT COUNT(*) FROM sales WHERE price > 150000",
+    "source": "plain",
+    "gen_s": 0.6421915829996578,
+    "error": null,
+    "valid": true,
+    "strict": false,
+    "lenient": false,
+    "n_rows": 1
+   },
+   "llm": {
+    "sql": "SELECT COUNT(*) AS count FROM sales WHERE LOWER(product) = 'laptop' AND price > 150000",
+    "source": "ollama",
+    "gen_s": 0.9277708330191672,
+    "error": null,
+    "valid": true,
+    "strict": true,
+    "lenient": true,
+    "n_rows": 1
+   },
+   "hybrid": {
+    "sql": "SELECT COUNT(*) FROM sales WHERE LOWER(product) = 'laptop' AND price > 150000",
+    "source": "ollama",
+    "gen_s": 1.2256567500007804,
+    "error": null,
+    "valid": true,
+    "strict": true,
+    "lenient": true,
+    "n_rows": 1
+   }
+  },
+  "T06": {
+   "rule": {
+    "sql": null,
+    "source": "rule",
+    "gen_s": 4.2458996176719666e-05,
+    "error": null,
+    "valid": false,
+    "strict": false,
+    "lenient": false
+   },
+   "plain": {
+    "sql": "SELECT COUNT(*) FROM sales WHERE price < 20000",
+    "source": "plain",
+    "gen_s": 0.849065165995853,
+    "error": null,
+    "valid": true,
+    "strict": false,
+    "lenient": false,
+    "n_rows": 1
+   },
+   "llm": {
+    "sql": "SELECT COUNT(*) AS count FROM sales WHERE LOWER(product) = 'mobile phone' AND price < 20000",
+    "source": "ollama",
+    "gen_s": 0.8730653329985216,
+    "error": null,
+    "valid": true,
+    "strict": true,
+    "lenient": true,
+    "n_rows": 1
+   },
+   "hybrid": {
+    "sql": "SELECT COUNT(*) FROM sales WHERE LOWER(product) = 'mobile phone' AND price < 20000",
+    "source": "ollama",
+    "gen_s": 0.9828876660030801,
+    "error": null,
+    "valid": true,
+    "strict": true,
+    "lenient": true,
+    "n_rows": 1
+   }
+  },
+  "T07": {
+   "rule": {
+    "sql": null,
+    "source": "rule",
+    "gen_s": 4.862499190494418e-05,
+    "error": null,
+    "valid": false,
+    "strict": false,
+    "lenient": false
+   },
+   "plain": {
+    "sql": "SELECT product, SUM(quantity_sold) FROM sales GROUP BY product",
+    "source": "plain",
+    "gen_s": 0.9364429169800133,
+    "error": null,
+    "valid": true,
+    "strict": true,
+    "lenient": true,
+    "n_rows": 2
+   },
+   "llm": {
+    "sql": "SELECT product, SUM(quantity_sold) AS total_quantity_sold FROM sales GROUP BY product",
+    "source": "ollama",
+    "gen_s": 0.6583338330092374,
+    "error": null,
+    "valid": true,
+    "strict": true,
+    "lenient": true,
+    "n_rows": 2
+   },
+   "hybrid": {
+    "sql": "SELECT product, SUM(quantity_sold) FROM sales GROUP BY product",
+    "source": "ollama",
+    "gen_s": 0.9428405840008054,
+    "error": null,
+    "valid": true,
+    "strict": true,
+    "lenient": true,
+    "n_rows": 2
+   }
+  },
+  "T08": {
+   "rule": {
+    "sql": null,
+    "source": "rule",
+    "gen_s": 1.575000351294875e-05,
+    "error": null,
+    "valid": false,
+    "strict": false,
+    "lenient": false
+   },
+   "plain": {
+    "sql": "SELECT SUM(quantity_sold) FROM sales WHERE brand IN ('Apple', 'Samsung')",
+    "source": "plain",
+    "gen_s": 0.8013324580097105,
+    "error": null,
+    "valid": true,
+    "strict": true,
+    "lenient": true,
+    "n_rows": 1
+   },
+   "llm": {
+    "sql": "SELECT SUM(quantity_sold) FROM sales WHERE LOWER(brand) IN ('apple', 'samsung')",
+    "source": "ollama",
+    "gen_s": 0.8653394159919117,
+    "error": null,
+    "valid": true,
+    "strict": true,
+    "lenient": true,
+    "n_rows": 1
+   },
+   "hybrid": {
+    "sql": "SELECT SUM(quantity_sold) FROM sales WHERE LOWER(brand) IN ('apple', 'samsung')",
+    "source": "ollama",
+    "gen_s": 0.9100677920214366,
+    "error": null,
+    "valid": true,
+    "strict": true,
+    "lenient": true,
+    "n_rows": 1
+   }
+  },
+  "T09": {
+   "rule": {
+    "sql": null,
+    "source": "rule",
+    "gen_s": 9.37501317821443e-06,
+    "error": null,
+    "valid": false,
+    "strict": false,
+    "lenient": false
+   },
+   "plain": {
+    "sql": "SELECT region, COUNT(*) FROM sales GROUP BY region",
+    "source": "plain",
+    "gen_s": 0.9574457909911871,
+    "error": null,
+    "valid": true,
+    "strict": false,
+    "lenient": false,
+    "n_rows": 5
+   },
+   "llm": {
+    "sql": "SELECT region, COUNT(*) AS count FROM sales WHERE LOWER(product) = 'laptop' GROUP BY region",
+    "source": "ollama",
+    "gen_s": 0.7750114999944344,
+    "error": null,
+    "valid": true,
+    "strict": true,
+    "lenient": true,
+    "n_rows": 5
+   },
+   "hybrid": {
+    "sql": "SELECT region, COUNT(*) FROM sales WHERE LOWER(product) = 'laptop' GROUP BY region",
+    "source": "ollama",
+    "gen_s": 0.7602803339832462,
+    "error": null,
+    "valid": true,
+    "strict": true,
+    "lenient": true,
+    "n_rows": 5
+   }
+  },
+  "T10": {
+   "rule": {
+    "sql": null,
+    "source": "rule",
+    "gen_s": 7.708003977313638e-06,
+    "error": null,
+    "valid": false,
+    "strict": false,
+    "lenient": false
+   },
+   "plain": {
+    "sql": "SELECT region \nFROM sales \nGROUP BY region \nORDER BY COUNT(*) ASC \nLIMIT 1",
+    "source": "plain",
+    "gen_s": 0.8644312079995871,
+    "error": null,
+    "valid": true,
+    "strict": true,
+    "lenient": true,
+    "n_rows": 1
+   },
+   "llm": {
+    "sql": "SELECT region FROM sales GROUP BY region ORDER BY COUNT(*) ASC LIMIT 1",
+    "source": "ollama",
+    "gen_s": 0.6793988329882268,
+    "error": null,
+    "valid": true,
+    "strict": true,
+    "lenient": true,
+    "n_rows": 1
+   },
+   "hybrid": {
+    "sql": "SELECT region FROM sales GROUP BY region ORDER BY COUNT(*) ASC LIMIT 1",
+    "source": "ollama",
+    "gen_s": 0.7309652910043951,
+    "error": null,
+    "valid": true,
+    "strict": true,
+    "lenient": true,
+    "n_rows": 1
+   }
+  },
+  "T11": {
+   "rule": {
+    "sql": null,
+    "source": "rule",
+    "gen_s": 4.137499490752816e-05,
+    "error": null,
+    "valid": false,
+    "strict": false,
+    "lenient": false
+   },
+   "plain": {
+    "sql": "SELECT AVG(price) FROM sales WHERE brand != 'Apple'",
+    "source": "plain",
+    "gen_s": 0.6301996249821968,
+    "error": null,
+    "valid": true,
+    "strict": false,
+    "lenient": false,
+    "n_rows": 1
+   },
+   "llm": {
+    "sql": "SELECT AVG(price) AS avg_price FROM sales WHERE LOWER(product) = 'laptop' AND LOWER(brand) != 'apple'",
+    "source": "ollama",
+    "gen_s": 0.9362546670017764,
+    "error": null,
+    "valid": true,
+    "strict": true,
+    "lenient": true,
+    "n_rows": 1
+   },
+   "hybrid": {
+    "sql": "SELECT AVG(price) AS avg_price FROM sales WHERE LOWER(product) = 'laptop' AND LOWER(brand) != 'apple'",
+    "source": "ollama",
+    "gen_s": 0.7634726249962114,
+    "error": null,
+    "valid": true,
+    "strict": true,
+    "lenient": true,
+    "n_rows": 1
+   }
+  },
+  "T12": {
+   "rule": {
+    "sql": null,
+    "source": "rule",
+    "gen_s": 5.741699715144932e-05,
+    "error": null,
+    "valid": false,
+    "strict": false,
+    "lenient": false
+   },
+   "plain": {
+    "sql": "SELECT COUNT(*) FROM sales WHERE dispatch_date BETWEEN '2024-01-01' AND '2024-03-31'",
+    "source": "plain",
+    "gen_s": 0.8039844159793574,
+    "error": null,
+    "valid": true,
+    "strict": true,
+    "lenient": true,
+    "n_rows": 1
+   },
+   "llm": {
+    "sql": "SELECT COUNT(*) AS count FROM sales WHERE dispatch_date >= '2024-01-01' AND dispatch_date <= '2024-03-31'",
+    "source": "ollama",
+    "gen_s": 0.7742005830223206,
+    "error": null,
+    "valid": true,
+    "strict": true,
+    "lenient": true,
+    "n_rows": 1
+   },
+   "hybrid": {
+    "sql": "SELECT COUNT(*) AS count FROM sales WHERE dispatch_date >= '2024-01-01' AND dispatch_date <= '2024-03-31'",
+    "source": "ollama",
+    "gen_s": 3.8876850420201663,
+    "error": null,
+    "valid": true,
+    "strict": true,
+    "lenient": true,
+    "n_rows": 1
+   }
+  },
+  "T13": {
+   "rule": {
+    "sql": null,
+    "source": "rule",
+    "gen_s": 0.00017833299352787435,
+    "error": null,
+    "valid": false,
+    "strict": false,
+    "lenient": false
+   },
+   "plain": {
+    "sql": "SELECT MAX(total_quantity) \nFROM (\n    SELECT SUM(quantity_sold) AS total_quantity \n    FROM sales \n    GROUP BY brand\n)",
+    "source": "plain",
+    "gen_s": 0.8297751669888385,
+    "error": null,
+    "valid": true,
+    "strict": true,
+    "lenient": true,
+    "n_rows": 1
+   },
+   "llm": {
+    "sql": "SELECT brand, SUM(quantity_sold) AS total_quantity_sold FROM sales GROUP BY brand ORDER BY total_quantity_sold DESC LIMIT 1",
+    "source": "ollama",
+    "gen_s": 0.7216444170044269,
+    "error": null,
+    "valid": true,
+    "strict": false,
+    "lenient": true,
+    "n_rows": 1
+   },
+   "hybrid": {
+    "sql": "SELECT SUM(quantity_sold) AS total_quantity_sold FROM sales GROUP BY brand ORDER BY total_quantity_sold DESC LIMIT 1",
+    "source": "ollama",
+    "gen_s": 0.9709036659915,
+    "error": null,
+    "valid": true,
+    "strict": true,
+    "lenient": true,
+    "n_rows": 1
+   }
+  },
+  "T14": {
+   "rule": {
+    "sql": null,
+    "source": "rule",
+    "gen_s": 4.5249995309859514e-05,
+    "error": null,
+    "valid": false,
+    "strict": false,
+    "lenient": false
+   },
+   "plain": {
+    "sql": "SELECT COUNT(DISTINCT brand) FROM sales",
+    "source": "plain",
+    "gen_s": 0.8007655830006115,
+    "error": null,
+    "valid": true,
+    "strict": true,
+    "lenient": true,
+    "n_rows": 1
+   },
+   "llm": {
+    "sql": "SELECT COUNT(DISTINCT brand) FROM sales",
+    "source": "ollama",
+    "gen_s": 0.8898834589926992,
+    "error": null,
+    "valid": true,
+    "strict": true,
+    "lenient": true,
+    "n_rows": 1
+   },
+   "hybrid": {
+    "sql": "SELECT COUNT(DISTINCT brand) FROM sales",
+    "source": "ollama",
+    "gen_s": 1.0338842079800088,
+    "error": null,
+    "valid": true,
+    "strict": true,
+    "lenient": true,
+    "n_rows": 1
+   }
+  },
+  "T15": {
+   "rule": {
+    "sql": null,
+    "source": "rule",
+    "gen_s": 8.415983757004142e-06,
+    "error": null,
+    "valid": false,
+    "strict": false,
+    "lenient": false
+   },
+   "plain": {
+    "sql": "SELECT region FROM sales GROUP BY region HAVING COUNT(*) > 10000",
+    "source": "plain",
+    "gen_s": 0.9102876250108238,
+    "error": null,
+    "valid": true,
+    "strict": true,
+    "lenient": true,
+    "n_rows": 2
+   },
+   "llm": {
+    "sql": "SELECT region FROM sales GROUP BY region HAVING COUNT(*) > 10000",
+    "source": "ollama",
+    "gen_s": 0.9095913749770261,
+    "error": null,
+    "valid": true,
+    "strict": true,
+    "lenient": true,
+    "n_rows": 2
+   },
+   "hybrid": {
+    "sql": "SELECT region FROM sales GROUP BY region HAVING COUNT(*) > 10000",
+    "source": "ollama",
+    "gen_s": 0.6983442080090754,
+    "error": null,
+    "valid": true,
+    "strict": true,
+    "lenient": true,
+    "n_rows": 2
+   }
+  },
+  "T16": {
+   "rule": {
+    "sql": "SELECT brand, AVG(price) AS avg_price FROM sales WHERE LOWER(product) = 'mobile phone' GROUP BY brand ORDER BY avg_price DESC LIMIT 1",
+    "source": "rule",
+    "gen_s": 4.5833003241568804e-05,
+    "error": null,
+    "valid": true,
+    "strict": false,
+    "lenient": true,
+    "n_rows": 1
+   },
+   "plain": {
+    "sql": "SELECT brand FROM sales GROUP BY brand ORDER BY AVG(price) DESC LIMIT 1",
+    "source": "plain",
+    "gen_s": 0.8710577919846401,
+    "error": null,
+    "valid": true,
+    "strict": false,
+    "lenient": false,
+    "n_rows": 1
+   },
+   "llm": {
+    "sql": "SELECT brand, AVG(price) AS avg_price FROM sales WHERE LOWER(product) = 'mobile phone' GROUP BY brand ORDER BY avg_price DESC LIMIT 1",
+    "source": "ollama",
+    "gen_s": 0.725223665998783,
+    "error": null,
+    "valid": true,
+    "strict": false,
+    "lenient": true,
+    "n_rows": 1
+   },
+   "hybrid": {
+    "sql": "SELECT brand, AVG(price) AS avg_price FROM sales WHERE LOWER(product) = 'mobile phone' GROUP BY brand ORDER BY avg_price DESC LIMIT 1",
+    "source": "rule",
+    "gen_s": 0.00017316601588390768,
+    "error": null,
+    "valid": true,
+    "strict": false,
+    "lenient": true,
+    "n_rows": 1
+   }
+  },
+  "T17": {
+   "rule": {
+    "sql": null,
+    "source": "rule",
+    "gen_s": 1.4749995898455381e-05,
+    "error": null,
+    "valid": false,
+    "strict": false,
+    "lenient": false
+   },
+   "plain": {
+    "sql": "SELECT SUM(price * quantity_sold) FROM sales WHERE brand = 'Apple'",
+    "source": "plain",
+    "gen_s": 0.7753118749824353,
+    "error": null,
+    "valid": true,
+    "strict": true,
+    "lenient": true,
+    "n_rows": 1
+   },
+   "llm": {
+    "sql": "SELECT SUM(price * quantity_sold) AS total_revenue FROM sales WHERE LOWER(brand) = 'apple'",
+    "source": "ollama",
+    "gen_s": 1.0284047909954097,
+    "error": null,
+    "valid": true,
+    "strict": true,
+    "lenient": true,
+    "n_rows": 1
+   },
+   "hybrid": {
+    "sql": "SELECT SUM(price * quantity_sold) FROM sales WHERE LOWER(brand) = 'apple'",
+    "source": "ollama",
+    "gen_s": 0.7271022080094554,
+    "error": null,
+    "valid": true,
+    "strict": true,
+    "lenient": true,
+    "n_rows": 1
+   }
+  },
+  "T18": {
+   "rule": {
+    "sql": null,
+    "source": "rule",
+    "gen_s": 1.0041985660791397e-05,
+    "error": null,
+    "valid": false,
+    "strict": false,
+    "lenient": false
+   },
+   "plain": {
+    "sql": "SELECT 100.0 * SUM(CASE WHEN region = 'west' THEN 1 ELSE 0 END) / COUNT(*) FROM sales",
+    "source": "plain",
+    "gen_s": 0.753483790991595,
+    "error": null,
+    "valid": true,
+    "strict": false,
+    "lenient": false,
+    "n_rows": 1
+   },
+   "llm": {
+    "sql": "SELECT CAST(SUM(CASE WHEN LOWER(region) = 'west' THEN 1 ELSE 0 END) AS FLOAT) * 100 / COUNT(*) AS percentage FROM sales",
+    "source": "ollama",
+    "gen_s": 0.7572250420053024,
+    "error": null,
+    "valid": true,
+    "strict": true,
+    "lenient": true,
+    "n_rows": 1
+   },
+   "hybrid": {
+    "sql": "SELECT CAST(SUM(CASE WHEN LOWER(region) = 'west' THEN 1 ELSE 0 END) AS FLOAT) * 100 / COUNT(*) FROM sales",
+    "source": "ollama",
+    "gen_s": 0.8553529999917373,
+    "error": null,
+    "valid": true,
+    "strict": true,
+    "lenient": true,
+    "n_rows": 1
+   }
+  },
+  "T19": {
+   "rule": {
+    "sql": null,
+    "source": "rule",
+    "gen_s": 4.5707973185926676e-05,
+    "error": null,
+    "valid": false,
+    "strict": false,
+    "lenient": false
+   },
+   "plain": {
+    "sql": "SELECT ram, AVG(price) FROM sales GROUP BY ram",
+    "source": "plain",
+    "gen_s": 0.5907917919976171,
+    "error": null,
+    "valid": true,
+    "strict": false,
+    "lenient": false,
+    "n_rows": 6
+   },
+   "llm": {
+    "sql": "SELECT ram, AVG(price) AS avg_price FROM sales WHERE LOWER(product) = 'mobile phone' GROUP BY ram",
+    "source": "ollama",
+    "gen_s": 0.7708179170149378,
+    "error": null,
+    "valid": true,
+    "strict": true,
+    "lenient": true,
+    "n_rows": 6
+   },
+   "hybrid": {
+    "sql": "SELECT ram, AVG(price) AS avg_price FROM sales WHERE LOWER(product) = 'mobile phone' GROUP BY ram",
+    "source": "ollama",
+    "gen_s": 0.7393419590080157,
+    "error": null,
+    "valid": true,
+    "strict": true,
+    "lenient": true,
+    "n_rows": 6
+   }
+  },
+  "T20": {
+   "rule": {
+    "sql": "SELECT COUNT(*) AS count FROM sales",
+    "source": "rule",
+    "gen_s": 4.687500768341124e-05,
+    "error": null,
+    "valid": true,
+    "strict": true,
+    "lenient": true,
+    "n_rows": 1
+   },
+   "plain": {
+    "sql": "SELECT COUNT(*) FROM sales",
+    "source": "plain",
+    "gen_s": 1.212357125012204,
+    "error": null,
+    "valid": true,
+    "strict": true,
+    "lenient": true,
+    "n_rows": 1
+   },
+   "llm": {
+    "sql": "SELECT COUNT(*) AS total_records FROM sales",
+    "source": "ollama",
+    "gen_s": 0.6932505829900037,
+    "error": null,
+    "valid": true,
+    "strict": true,
+    "lenient": true,
+    "n_rows": 1
+   },
+   "hybrid": {
+    "sql": "SELECT COUNT(*) AS count FROM sales",
+    "source": "rule",
+    "gen_s": 0.0001765000051818788,
+    "error": null,
+    "valid": true,
+    "strict": true,
+    "lenient": true,
+    "n_rows": 1
+   }
+  },
+  "U01": {
+   "rule": {
+    "sql": null,
+    "source": "rule",
+    "gen_s": 3.33995558321476e-07,
+    "error": null,
+    "valid": false,
+    "strict": false,
+    "lenient": false
+   },
+   "plain": {
+    "sql": "SELECT COUNT(*) FROM products WHERE category = 'Office'",
+    "source": "plain",
+    "gen_s": 0.687331124994671,
+    "error": null,
+    "valid": true,
+    "strict": true,
+    "lenient": true,
+    "n_rows": 1
+   },
+   "llm": {
+    "sql": "SELECT count(products.id) AS product_count FROM products WHERE products.category = 'Office'",
+    "source": "ollama",
+    "gen_s": 1.1129570830089506,
+    "error": null,
+    "valid": true,
+    "strict": true,
+    "lenient": true,
+    "n_rows": 1
+   },
+   "hybrid": {
+    "sql": "SELECT count(products.id) AS product_count FROM products WHERE products.category = 'Office'",
+    "source": "ollama",
+    "gen_s": 0.735727457999019,
+    "error": null,
+    "valid": true,
+    "strict": true,
+    "lenient": true,
+    "n_rows": 1
+   }
+  },
+  "U02": {
+   "rule": {
+    "sql": null,
+    "source": "rule",
+    "gen_s": 1.66997779160738e-07,
+    "error": null,
+    "valid": false,
+    "strict": false,
+    "lenient": false
+   },
+   "plain": {
+    "sql": "SELECT SUM(o.quantity)\nFROM orders o\nJOIN customers c ON o.customer_id = c.id\nWHERE c.tier = 'bronze'",
+    "source": "plain",
+    "gen_s": 0.6975443749979604,
+    "error": null,
+    "valid": true,
+    "strict": true,
+    "lenient": true,
+    "n_rows": 1
+   },
+   "llm": {
+    "sql": "SELECT SUM(orders.quantity) AS total_quantity_ordered FROM orders INNER JOIN customers ON orders.customer_id = customers.id WHERE customers.tier = 'bronze'",
+    "source": "ollama",
+    "gen_s": 0.7595822500006761,
+    "error": null,
+    "valid": true,
+    "strict": true,
+    "lenient": true,
+    "n_rows": 1
+   },
+   "hybrid": {
+    "sql": "SELECT SUM(orders.quantity) AS total_quantity_ordered FROM orders INNER JOIN customers ON orders.customer_id = customers.id WHERE customers.tier = 'bronze'",
+    "source": "ollama",
+    "gen_s": 0.7285672920115758,
+    "error": null,
+    "valid": true,
+    "strict": true,
+    "lenient": true,
+    "n_rows": 1
+   }
+  },
+  "U03": {
+   "rule": {
+    "sql": null,
+    "source": "rule",
+    "gen_s": 1.66997779160738e-07,
+    "error": null,
+    "valid": false,
+    "strict": false,
+    "lenient": false
+   },
+   "plain": {
+    "sql": "SELECT COUNT(*) \nFROM (\n    SELECT order_id FROM orders WHERE status = 'Cancelled'\n    UNION ALL\n    SELECT order_id FROM orders_archive WHERE status = 'Cancelled'\n)",
+    "source": "plain",
+    "gen_s": 0.7540453750116285,
+    "error": null,
+    "valid": true,
+    "strict": false,
+    "lenient": false,
+    "n_rows": 1
+   },
+   "llm": {
+    "sql": "SELECT COUNT(\"orders\".order_id) AS cancelled_orders_count FROM \"orders\" WHERE \"orders\".status = 'cancelled'",
+    "source": "ollama",
+    "gen_s": 0.8026071249914821,
+    "error": null,
+    "valid": true,
+    "strict": true,
+    "lenient": true,
+    "n_rows": 1
+   },
+   "hybrid": {
+    "sql": "SELECT count(*) AS cancelled_orders_count FROM \"orders\" WHERE \"orders\".status = 'cancelled'",
+    "source": "ollama",
+    "gen_s": 0.6255355839966796,
+    "error": null,
+    "valid": true,
+    "strict": true,
+    "lenient": true,
+    "n_rows": 1
+   }
+  },
+  "U04": {
+   "rule": {
+    "sql": null,
+    "source": "rule",
+    "gen_s": 1.2500095181167126e-07,
+    "error": null,
+    "valid": false,
+    "strict": false,
+    "lenient": false
+   },
+   "plain": {
+    "sql": "SELECT tier \nFROM customers \nGROUP BY tier \nORDER BY COUNT(*) DESC \nLIMIT 1",
+    "source": "plain",
+    "gen_s": 0.6408069170138333,
+    "error": null,
+    "valid": true,
+    "strict": true,
+    "lenient": true,
+    "n_rows": 1
+   },
+   "llm": {
+    "sql": "SELECT customers.tier, COUNT(customers.id) AS customer_count FROM customers GROUP BY customers.tier ORDER BY customer_count DESC LIMIT 1",
+    "source": "ollama",
+    "gen_s": 0.7494526660011616,
+    "error": null,
+    "valid": true,
+    "strict": false,
+    "lenient": true,
+    "n_rows": 1
+   },
+   "hybrid": {
+    "sql": "SELECT customers.tier, COUNT(customers.id) AS customer_count FROM customers GROUP BY customers.tier ORDER BY customer_count DESC LIMIT 1",
+    "source": "ollama",
+    "gen_s": 0.9062072499946225,
+    "error": null,
+    "valid": true,
+    "strict": false,
+    "lenient": true,
+    "n_rows": 1
+   }
+  },
+  "U05": {
+   "rule": {
+    "sql": null,
+    "source": "rule",
+    "gen_s": 1.2500095181167126e-07,
+    "error": null,
+    "valid": false,
+    "strict": false,
+    "lenient": false
+   },
+   "plain": {
+    "sql": "SELECT AVG(price) FROM products WHERE category = 'Electronics'",
+    "source": "plain",
+    "gen_s": 2.0406820829957724,
+    "error": null,
+    "valid": true,
+    "strict": true,
+    "lenient": true,
+    "n_rows": 1
+   },
+   "llm": {
+    "sql": "SELECT AVG(products.price) AS average_price FROM products WHERE products.category = 'Electronics'",
+    "source": "ollama",
+    "gen_s": 0.6828177080024034,
+    "error": null,
+    "valid": true,
+    "strict": true,
+    "lenient": true,
+    "n_rows": 1
+   },
+   "hybrid": {
+    "sql": "SELECT AVG(products.price) AS average_price FROM products WHERE products.category = 'Electronics'",
+    "source": "ollama",
+    "gen_s": 0.6266684169822838,
+    "error": null,
+    "valid": true,
+    "strict": true,
+    "lenient": true,
+    "n_rows": 1
+   }
+  },
+  "U06": {
+   "rule": {
+    "sql": null,
+    "source": "rule",
+    "gen_s": 8.300412446260452e-08,
+    "error": null,
+    "valid": false,
+    "strict": false,
+    "lenient": false
+   },
+   "plain": {
+    "sql": "SELECT count(*) \nFROM orders o \nJOIN customers c ON o.customer_id = c.id \nWHERE c.city = 'Chennai'",
+    "source": "plain",
+    "gen_s": 0.7613596669980325,
+    "error": null,
+    "valid": true,
+    "strict": true,
+    "lenient": true,
+    "n_rows": 1
+   },
+   "llm": {
+    "sql": "SELECT count(\"orders\".order_id) AS order_count FROM \"orders\" INNER JOIN customers ON \"orders\".customer_id = customers.id WHERE customers.city = 'Chennai'",
+    "source": "ollama",
+    "gen_s": 0.994270166993374,
+    "error": null,
+    "valid": true,
+    "strict": true,
+    "lenient": true,
+    "n_rows": 1
+   },
+   "hybrid": {
+    "sql": "SELECT count(\"orders\".order_id) AS order_count FROM \"orders\" INNER JOIN customers ON \"orders\".customer_id = customers.id WHERE customers.city = 'Chennai'",
+    "source": "ollama",
+    "gen_s": 4.285736500023631,
+    "error": null,
+    "valid": true,
+    "strict": true,
+    "lenient": true,
+    "n_rows": 1
+   }
+  },
+  "U07": {
+   "rule": {
+    "sql": null,
+    "source": "rule",
+    "gen_s": 1.659791450947523e-07,
+    "error": null,
+    "valid": false,
+    "strict": false,
+    "lenient": false
+   },
+   "plain": {
+    "sql": "SELECT SUM(p.price * o.quantity) \nFROM orders o \nJOIN products p ON o.product_id = p.id \nWHERE o.order_date LIKE '2025%'",
+    "source": "plain",
+    "gen_s": 0.7319864169985522,
+    "error": null,
+    "valid": true,
+    "strict": true,
+    "lenient": true,
+    "n_rows": 1
+   },
+   "llm": {
+    "sql": "SELECT SUM(orders.quantity * products.price) AS total_revenue FROM \"orders\" INNER JOIN products ON \"orders\".product_id = products.id WHERE \"orders\".order_date LIKE '2025%'",
+    "source": "ollama",
+    "gen_s": 2.6266509580018464,
+    "error": null,
+    "valid": true,
+    "strict": true,
+    "lenient": true,
+    "n_rows": 1
+   },
+   "hybrid": {
+    "sql": "SELECT SUM(orders.quantity * products.price) AS total_revenue FROM \"orders\" INNER JOIN products ON \"orders\".product_id = products.id WHERE \"orders\".order_date LIKE '2025%'",
+    "source": "ollama",
+    "gen_s": 0.6950075839995407,
+    "error": null,
+    "valid": true,
+    "strict": true,
+    "lenient": true,
+    "n_rows": 1
+   }
+  },
+  "U08": {
+   "rule": {
+    "sql": null,
+    "source": "rule",
+    "gen_s": 1.2500095181167126e-07,
+    "error": null,
+    "valid": false,
+    "strict": false,
+    "lenient": false
+   },
+   "plain": {
+    "sql": "SELECT name FROM customers WHERE city = 'Jaipur' AND tier = 'gold'",
+    "source": "plain",
+    "gen_s": 0.6279684589826502,
+    "error": null,
+    "valid": true,
+    "strict": true,
+    "lenient": true,
+    "n_rows": 4
+   },
+   "llm": {
+    "sql": "SELECT customers.name FROM customers WHERE customers.city = 'Jaipur' AND customers.tier = 'gold'",
+    "source": "ollama",
+    "gen_s": 0.7618284159980249,
+    "error": null,
+    "valid": true,
+    "strict": true,
+    "lenient": true,
+    "n_rows": 4
+   },
+   "hybrid": {
+    "sql": "SELECT customers.name FROM customers WHERE customers.city = 'Jaipur' AND customers.tier = 'gold'",
+    "source": "ollama",
+    "gen_s": 3.433548166998662,
+    "error": null,
+    "valid": true,
+    "strict": true,
+    "lenient": true,
+    "n_rows": 4
+   }
+  },
+  "U09": {
+   "rule": {
+    "sql": null,
+    "source": "rule",
+    "gen_s": 1.2500095181167126e-07,
+    "error": null,
+    "valid": false,
+    "strict": false,
+    "lenient": false
+   },
+   "plain": {
+    "sql": "SELECT p.category, COUNT(o.order_id)\nFROM products p\nJOIN orders o ON p.id = o.product_id\nGROUP BY p.category",
+    "source": "plain",
+    "gen_s": 1.0253162079898175,
+    "error": null,
+    "valid": true,
+    "strict": true,
+    "lenient": true,
+    "n_rows": 5
+   },
+   "llm": {
+    "sql": "SELECT products.category, COUNT(\"orders\".order_id) AS order_count FROM products INNER JOIN \"orders\" ON products.id = \"orders\".product_id GROUP BY products.category",
+    "source": "ollama",
+    "gen_s": 0.9060661249968689,
+    "error": null,
+    "valid": true,
+    "strict": true,
+    "lenient": true,
+    "n_rows": 5
+   },
+   "hybrid": {
+    "sql": "SELECT products.category, COUNT(orders.order_id) AS order_count FROM products INNER JOIN orders ON products.id = orders.product_id GROUP BY products.category",
+    "source": "ollama",
+    "gen_s": 0.957866999990074,
+    "error": null,
+    "valid": true,
+    "strict": true,
+    "lenient": true,
+    "n_rows": 5
+   }
+  },
+  "U10": {
+   "rule": {
+    "sql": null,
+    "source": "rule",
+    "gen_s": 1.2500095181167126e-07,
+    "error": null,
+    "valid": false,
+    "strict": false,
+    "lenient": false
+   },
+   "plain": {
+    "sql": "SELECT COUNT(*)\nFROM (\n    SELECT customer_id\n    FROM (\n        SELECT customer_id FROM orders\n        UNION ALL\n        SELECT customer_id FROM orders_archive\n    )\n    GROUP BY customer_id\n    HAVING COUNT(*) > 12\n)",
+    "source": "plain",
+    "gen_s": 0.9169123330211733,
+    "error": null,
+    "valid": true,
+    "strict": false,
+    "lenient": false,
+    "n_rows": 1
+   },
+   "llm": {
+    "sql": "SELECT COUNT(*) AS customer_count FROM (SELECT customers.id FROM customers INNER JOIN \"orders\" ON customers.id = \"orders\".customer_id GROUP BY customers.id HAVING COUNT(\"orders\".order_id) > 12) AS frequent_customers",
+    "source": "ollama",
+    "gen_s": 0.9178598330181558,
+    "error": null,
+    "valid": true,
+    "strict": true,
+    "lenient": true,
+    "n_rows": 1
+   },
+   "hybrid": {
+    "sql": "SELECT COUNT(*) AS customer_count FROM (SELECT customers.id FROM customers INNER JOIN \"orders\" ON customers.id = \"orders\".customer_id GROUP BY customers.id HAVING COUNT(\"orders\".order_id) > 12) AS frequent_customers",
+    "source": "ollama",
+    "gen_s": 1.048274583008606,
+    "error": null,
+    "valid": true,
+    "strict": true,
+    "lenient": true,
+    "n_rows": 1
+   }
+  },
+  "U11": {
+   "rule": {
+    "sql": null,
+    "source": "rule",
+    "gen_s": 1.2500095181167126e-07,
+    "error": null,
+    "valid": false,
+    "strict": false,
+    "lenient": false
+   },
+   "plain": {
+    "sql": "SELECT SUM(o.quantity * p.price)\nFROM (\n    SELECT * FROM orders\n    UNION ALL\n    SELECT * FROM orders_archive\n) o\nJOIN products p ON o.product_id = p.id\nWHERE o.status = 'Cancelled'",
+    "source": "plain",
+    "gen_s": 0.7934073749929667,
+    "error": null,
+    "valid": true,
+    "strict": false,
+    "lenient": false,
+    "n_rows": 1
+   },
+   "llm": {
+    "sql": "SELECT SUM(products.price * \"orders\".quantity) AS total_revenue FROM \"orders\" JOIN products ON \"orders\".product_id = products.id WHERE \"orders\".status = 'cancelled'",
+    "source": "ollama",
+    "gen_s": 0.7124994590121787,
+    "error": null,
+    "valid": true,
+    "strict": true,
+    "lenient": true,
+    "n_rows": 1
+   },
+   "hybrid": {
+    "sql": "SELECT SUM(products.price * \"orders\".quantity) AS total_revenue FROM \"orders\" JOIN products ON \"orders\".product_id = products.id WHERE \"orders\".status = 'cancelled'",
+    "source": "ollama",
+    "gen_s": 0.7144463330041617,
+    "error": null,
+    "valid": true,
+    "strict": true,
+    "lenient": true,
+    "n_rows": 1
+   }
+  },
+  "U12": {
+   "rule": {
+    "sql": null,
+    "source": "rule",
+    "gen_s": 8.300412446260452e-08,
+    "error": null,
+    "valid": false,
+    "strict": false,
+    "lenient": false
+   },
+   "plain": {
+    "sql": "SELECT p.product_name\nFROM products p\nJOIN (\n    SELECT product_id, SUM(quantity) as total_units\n    FROM (\n        SELECT product_id, quantity FROM orders\n        UNION ALL\n        SELECT product_id, quantity FROM orders_archive\n    )\n    GROUP BY product_id\n) o ON p.id = o.product_id\nORDER BY o.total_units DESC\nLIMIT 1",
+    "source": "plain",
+    "gen_s": 1.3588903329800814,
+    "error": null,
+    "valid": true,
+    "strict": true,
+    "lenient": true,
+    "n_rows": 1
+   },
+   "llm": {
+    "sql": "SELECT T1.product_name, SUM(T2.quantity) AS total_units_ordered FROM products AS T1 JOIN orders AS T2 ON T1.id = T2.product_id GROUP BY T1.product_name ORDER BY total_units_ordered DESC LIMIT 1",
+    "source": "ollama",
+    "gen_s": 1.1285395000013523,
+    "error": null,
+    "valid": true,
+    "strict": false,
+    "lenient": true,
+    "n_rows": 1
+   },
+   "hybrid": {
+    "sql": "SELECT T1.product_name, SUM(T2.quantity) AS total_units_ordered FROM products AS T1 JOIN orders AS T2 ON T1.id = T2.product_id GROUP BY T1.product_name ORDER BY total_units_ordered DESC LIMIT 1",
+    "source": "ollama",
+    "gen_s": 0.8532383340061642,
+    "error": null,
+    "valid": true,
+    "strict": false,
+    "lenient": true,
+    "n_rows": 1
+   }
+  },
+  "U13": {
+   "rule": {
+    "sql": null,
+    "source": "rule",
+    "gen_s": 8.300412446260452e-08,
+    "error": null,
+    "valid": false,
+    "strict": false,
+    "lenient": false
+   },
+   "plain": {
+    "sql": "SELECT status, COUNT(*) \nFROM (\n    SELECT status FROM orders \n    UNION ALL \n    SELECT status FROM orders_archive\n) \nGROUP BY status",
+    "source": "plain",
+    "gen_s": 0.9174477079941425,
+    "error": null,
+    "valid": true,
+    "strict": true,
+    "lenient": true,
+    "n_rows": 3
+   },
+   "llm": {
+    "sql": "SELECT T.status, COUNT(*) AS order_count FROM (SELECT status FROM \"orders\" UNION ALL SELECT status FROM orders_archive) AS T GROUP BY T.status",
+    "source": "ollama",
+    "gen_s": 0.9171788749808911,
+    "error": null,
+    "valid": true,
+    "strict": true,
+    "lenient": true,
+    "n_rows": 3
+   },
+   "hybrid": {
+    "sql": "SELECT T.status, COUNT(*) AS order_count FROM (SELECT status FROM \"orders\" UNION ALL SELECT status FROM orders_archive) AS T GROUP BY T.status",
+    "source": "ollama",
+    "gen_s": 0.8838479170226492,
+    "error": null,
+    "valid": true,
+    "strict": true,
+    "lenient": true,
+    "n_rows": 3
+   }
+  },
+  "U14": {
+   "rule": {
+    "sql": null,
+    "source": "rule",
+    "gen_s": 2.0800507627427578e-07,
+    "error": null,
+    "valid": false,
+    "strict": false,
+    "lenient": false
+   },
+   "plain": {
+    "sql": "SELECT COUNT(*) FROM orders_archive",
+    "source": "plain",
+    "gen_s": 0.6110677499964368,
+    "error": null,
+    "valid": true,
+    "strict": true,
+    "lenient": true,
+    "n_rows": 1
+   },
+   "llm": {
+    "sql": "SELECT COUNT(\"orders_archive\".\"order_id\") AS order_count FROM \"orders_archive\"",
+    "source": "ollama",
+    "gen_s": 0.9194250000000466,
+    "error": null,
+    "valid": true,
+    "strict": true,
+    "lenient": true,
+    "n_rows": 1
+   },
+   "hybrid": {
+    "sql": "SELECT COUNT(\"orders_archive\".order_id) AS order_count FROM \"orders_archive\"",
+    "source": "ollama",
+    "gen_s": 0.9209609579993412,
+    "error": null,
+    "valid": true,
+    "strict": true,
+    "lenient": true,
+    "n_rows": 1
+   }
+  },
+  "U15": {
+   "rule": {
+    "sql": null,
+    "source": "rule",
+    "gen_s": 1.2500095181167126e-07,
+    "error": null,
+    "valid": false,
+    "strict": false,
+    "lenient": false
+   },
+   "plain": {
+    "sql": "SELECT SUM(quantity) \nFROM (\n    SELECT quantity, order_date FROM orders\n    UNION ALL\n    SELECT quantity, order_date FROM orders_archive\n) \nWHERE order_date LIKE '2023%'",
+    "source": "plain",
+    "gen_s": 0.7071767500019632,
+    "error": null,
+    "valid": true,
+    "strict": true,
+    "lenient": true,
+    "n_rows": 1
+   },
+   "llm": {
+    "sql": "SELECT SUM(all_orders.quantity) AS total_quantity_ordered FROM (SELECT quantity, order_date FROM \"orders\" UNION ALL SELECT quantity, order_date FROM orders_archive) AS all_orders WHERE all_orders.order_date LIKE '2023%'",
+    "source": "ollama",
+    "gen_s": 0.9013882080034819,
+    "error": null,
+    "valid": true,
+    "strict": true,
+    "lenient": true,
+    "n_rows": 1
+   },
+   "hybrid": {
+    "sql": "SELECT SUM(orders_archive.quantity) AS total_quantity_ordered FROM orders_archive WHERE orders_archive.order_date LIKE '2023%'",
+    "source": "ollama",
+    "gen_s": 0.6506990409980062,
+    "error": null,
+    "valid": true,
+    "strict": true,
+    "lenient": true,
+    "n_rows": 1
+   }
+  },
+  "U16": {
+   "rule": {
+    "sql": null,
+    "source": "rule",
+    "gen_s": 1.6600824892520905e-07,
+    "error": null,
+    "valid": false,
+    "strict": false,
+    "lenient": false
+   },
+   "plain": {
+    "sql": "SELECT c.city\nFROM customers c\nJOIN orders o ON c.id = o.customer_id\nWHERE o.status = 'Returned'\nGROUP BY c.city\nHAVING COUNT(*) > 21",
+    "source": "plain",
+    "gen_s": 1.133927415998187,
+    "error": null,
+    "valid": true,
+    "strict": false,
+    "lenient": false,
+    "n_rows": 0
+   },
+   "llm": {
+    "sql": "SELECT customers.city FROM customers JOIN orders ON customers.id = orders.customer_id WHERE orders.status = 'returned' GROUP BY customers.city HAVING COUNT(orders.order_id) > 21",
+    "source": "ollama",
+    "gen_s": 1.8633734580071177,
+    "error": null,
+    "valid": true,
+    "strict": true,
+    "lenient": true,
+    "n_rows": 3
+   },
+   "hybrid": {
+    "sql": "SELECT customers.city FROM customers JOIN orders ON customers.id = orders.customer_id WHERE orders.status = 'returned' GROUP BY customers.city HAVING COUNT(orders.order_id) > 21",
+    "source": "ollama",
+    "gen_s": 0.8832307499833405,
+    "error": null,
+    "valid": true,
+    "strict": true,
+    "lenient": true,
+    "n_rows": 3
+   }
+  },
+  "U17": {
+   "rule": {
+    "sql": null,
+    "source": "rule",
+    "gen_s": 1.66997779160738e-07,
+    "error": null,
+    "valid": false,
+    "strict": false,
+    "lenient": false
+   },
+   "plain": {
+    "sql": "SELECT AVG(customer_spend)\nFROM (\n    SELECT SUM(p.price * o.quantity) AS customer_spend\n    FROM orders o\n    JOIN products p ON o.product_id = p.id\n    GROUP BY o.customer_id\n)",
+    "source": "plain",
+    "gen_s": 0.9198220419930294,
+    "error": null,
+    "valid": true,
+    "strict": true,
+    "lenient": true,
+    "n_rows": 1
+   },
+   "llm": {
+    "sql": "SELECT AVG(customer_spend) AS average_spend_per_customer FROM (SELECT SUM(products.price * \"orders\".quantity) AS customer_spend FROM \"orders\" INNER JOIN products ON \"orders\".product_id = products.id GROUP BY \"orders\".customer_id)",
+    "source": "ollama",
+    "gen_s": 0.8701754159992561,
+    "error": null,
+    "valid": true,
+    "strict": true,
+    "lenient": true,
+    "n_rows": 1
+   },
+   "hybrid": {
+    "sql": "SELECT AVG(customer_spend) AS average_spend_per_customer FROM (SELECT SUM(products.price * \"orders\".quantity) AS customer_spend FROM \"orders\" INNER JOIN products ON \"orders\".product_id = products.id GROUP BY \"orders\".customer_id)",
+    "source": "ollama",
+    "gen_s": 0.7153468749893364,
+    "error": null,
+    "valid": true,
+    "strict": true,
+    "lenient": true,
+    "n_rows": 1
+   }
+  },
+  "U18": {
+   "rule": {
+    "sql": null,
+    "source": "rule",
+    "gen_s": 8.399365469813347e-08,
+    "error": null,
+    "valid": false,
+    "strict": false,
+    "lenient": false
+   },
+   "plain": {
+    "sql": "SELECT count(*) \nFROM orders \nJOIN products ON orders.product_id = products.id \nWHERE products.price > 50000",
+    "source": "plain",
+    "gen_s": 0.9344501669984311,
+    "error": null,
+    "valid": true,
+    "strict": true,
+    "lenient": true,
+    "n_rows": 1
+   },
+   "llm": {
+    "sql": "SELECT count(\"orders\".order_id) AS order_count FROM \"orders\" INNER JOIN products ON \"orders\".product_id = products.id WHERE products.price > 50000",
+    "source": "ollama",
+    "gen_s": 0.9670007500099018,
+    "error": null,
+    "valid": true,
+    "strict": true,
+    "lenient": true,
+    "n_rows": 1
+   },
+   "hybrid": {
+    "sql": "SELECT count(\"orders\".order_id) AS order_count FROM \"orders\" INNER JOIN products ON \"orders\".product_id = products.id WHERE products.price > 50000",
+    "source": "ollama",
+    "gen_s": 0.9181079579866491,
+    "error": null,
+    "valid": true,
+    "strict": true,
+    "lenient": true,
+    "n_rows": 1
+   }
+  },
+  "U19": {
+   "rule": {
+    "sql": null,
+    "source": "rule",
+    "gen_s": 1.2500095181167126e-07,
+    "error": null,
+    "valid": false,
+    "strict": false,
+    "lenient": false
+   },
+   "plain": {
+    "sql": "SELECT tier, COUNT(DISTINCT customers.id)\nFROM customers\nJOIN orders ON customers.id = orders.customer_id\nGROUP BY tier",
+    "source": "plain",
+    "gen_s": 0.7046399579849094,
+    "error": null,
+    "valid": true,
+    "strict": true,
+    "lenient": true,
+    "n_rows": 3
+   },
+   "llm": {
+    "sql": "SELECT customers.tier, COUNT(DISTINCT customers.id) AS customer_count FROM customers INNER JOIN \"orders\" ON customers.id = \"orders\".customer_id GROUP BY customers.tier",
+    "source": "ollama",
+    "gen_s": 0.9381562499911524,
+    "error": null,
+    "valid": true,
+    "strict": true,
+    "lenient": true,
+    "n_rows": 3
+   },
+   "hybrid": {
+    "sql": "SELECT customers.tier, COUNT(DISTINCT customers.id) AS customer_count FROM customers INNER JOIN \"orders\" ON customers.id = \"orders\".customer_id GROUP BY customers.tier",
+    "source": "ollama",
+    "gen_s": 0.8168397499830462,
+    "error": null,
+    "valid": true,
+    "strict": true,
+    "lenient": true,
+    "n_rows": 3
+   }
+  },
+  "U20": {
+   "rule": {
+    "sql": null,
+    "source": "rule",
+    "gen_s": 8.300412446260452e-08,
+    "error": null,
+    "valid": false,
+    "strict": false,
+    "lenient": false
+   },
+   "plain": {
+    "sql": "SELECT count(*)\nFROM orders o\nJOIN customers c ON o.customer_id = c.id\nWHERE c.tier = 'silver' \nAND o.order_date LIKE '2024%'",
+    "source": "plain",
+    "gen_s": 0.8129588330048136,
+    "error": null,
+    "valid": true,
+    "strict": true,
+    "lenient": true,
+    "n_rows": 1
+   },
+   "llm": {
+    "sql": "SELECT count(\"orders\".order_id) AS order_count FROM \"orders\" INNER JOIN customers ON \"orders\".customer_id = customers.id WHERE customers.tier = 'silver' AND \"orders\".order_date LIKE '2024%'",
+    "source": "ollama",
+    "gen_s": 0.9012338329921477,
+    "error": null,
+    "valid": true,
+    "strict": true,
+    "lenient": true,
+    "n_rows": 1
+   },
+   "hybrid": {
+    "sql": "SELECT count(\"orders\".order_id) AS order_count FROM \"orders\" INNER JOIN customers ON \"orders\".customer_id = customers.id WHERE customers.tier = 'silver' AND \"orders\".order_date LIKE '2024%'",
+    "source": "ollama",
+    "gen_s": 1.5426852920209058,
+    "error": null,
+    "valid": true,
+    "strict": true,
+    "lenient": true,
+    "n_rows": 1
+   }
+  }
+ },
+ "wall_seconds": {
+  "rule": 0.026619792013661936,
+  "plain": 34.61065587500343,
+  "llm": 38.08933895899099,
+  "hybrid": 40.25050883300719
+ }
+}

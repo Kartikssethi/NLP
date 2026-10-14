@@ -161,6 +161,16 @@ data/
 mobile_sales_data.csv   the source dataset
 ```
 
+## Evaluation
+
+`eval/` holds a labelled benchmark (150 questions + 40 held-out, with gold SQL,
+over the real sales table and a seeded multi-table dataset) and the code to run
+it. Headline results on the held-out set: the hybrid pipeline reaches 100%
+(40/40) execution accuracy versus 62.5% for a plain-prompt LLM; on the main set
+94.0% vs 94.7% for the LLM alone (no significant difference), with 29% of
+questions answered by the rules with no LLM call. See `eval/RESULTS.md` for
+all tables, the error analysis and the caveats, and `eval/README.md` to rerun.
+
 ## Known limitations
 
 - The rule-based parser knows `sales` table columns (product, brand, region,

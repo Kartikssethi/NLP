@@ -200,7 +200,54 @@ def _resolve_dimension(word: str) -> str | None:
     return None
 
 
+# Words a rule pattern either consumes or can safely ignore. A question
+# containing any other word ("per", "above", "ssd", "2024", "processor"...) says
+# something the patterns don't model, so a rule match would silently drop it —
+# the engine abstains instead and the LLM handles the question.
+_FUNCTION_WORDS = {
+    "a", "an", "the", "of", "in", "for", "by", "is", "are", "was", "were", "what", "whats", "s", "which",
+    "who", "how", "many", "much", "show", "me", "list", "give", "get", "find", "display", "please", "tell",
+    "all", "any", "there", "to", "do", "does", "did", "i", "we", "our", "on", "at", "with", "and", "that",
+    "have", "has", "from", "it", "its", "only", "just", "now", "also", "as", "can", "you", "us", "my",
+    # aggregation / ranking words the patterns understand
+    "number", "count", "total", "sum", "average", "avg", "mean", "top", "highest", "lowest", "most", "least",
+    "best", "worst", "maximum", "max", "minimum", "min", "greatest", "largest", "biggest", "smallest",
+    "cheap", "cheapest", "expensive", "priciest", "costliest", "popular", "delete", "remove",
+    # measure / column words
+    "sales", "sale", "records", "record", "transactions", "transaction", "sold", "sell", "sells", "selling",
+    "units", "unit", "quantity", "qty", "price", "prices", "cost", "rows", "row", "ram", "rom", "storage",
+    "memory", "gb", "tb", "region", "regions",
+}
+
+
+def _vocabulary() -> set[str]:
+    words = set(_FUNCTION_WORDS) | set(DIMENSION_WORDS) | set(PRODUCT_ALIASES) | set(COLUMN_ALIASES)
+    for value in KNOWN_PRODUCTS | KNOWN_BRANDS | KNOWN_REGIONS | KNOWN_RAM | KNOWN_ROM:
+        words.update(value.split())
+    return words
+
+
+def _unexplained_words(text: str) -> list[str]:
+    t = _normalize_numbers(text.strip().lower())
+    # the count after "top"/"delete"/"remove" is part of the patterns; any other number is not
+    t = re.sub(r"\b(top|delete|remove)\s+\d+\b", r"\1", t)
+    vocab = _vocabulary()
+    return [
+        w for w in re.findall(r"[a-z0-9]+", t)
+        if w not in vocab and w.rstrip("s") not in vocab and w + "s" not in vocab
+    ]
+
+
 def rule_based_parse(text: str) -> ParseResult | None:
+    """The rule patterns, with a safeguard: a match only counts if every word of
+    the question is one the patterns account for (see _unexplained_words)."""
+    result = _match_rules(text)
+    if result is None or _unexplained_words(text):
+        return None
+    return result
+
+
+def _match_rules(text: str) -> ParseResult | None:
     t = _normalize_numbers(text.strip().lower())
 
     # "<sum|total|average|avg|mean> <metric...> by <dimension>" — metric may
@@ -220,19 +267,27 @@ def rule_based_parse(text: str) -> ParseResult | None:
             sql += f" GROUP BY {dim} ORDER BY {agg.lower()}_{metric} DESC"
             return ParseResult(sql, "rule")
 
-    # "top N <dimension(s)> by <metric>" -> aggregate top-N
-    m = re.search(r"top\s+(\d+)\s+(\w+?)s?\s+by\s+(\w+)", t)
+    # "top N [filter] <dimension(s)> by [total|average] <metric|number of ...>" -> aggregate top-N
+    m = re.search(r"top\s+(\d+)\s+(?:\w+\s+)?(\w+?)s?\s+by\s+(.+)$", t)
     if m:
-        n, dim_word, metric_word = m.groups()
+        n, dim_word, rest = m.groups()
         dim = _resolve_dimension(dim_word)
-        metric = _resolve_metric(metric_word)
-        if dim and metric:
-            where = _extract_filters(t)
-            sql = f"SELECT {dim}, SUM({metric}) AS total_{metric} FROM {TABLE}"
-            if where:
-                sql += f" WHERE {where}"
-            sql += f" GROUP BY {dim} ORDER BY total_{metric} DESC LIMIT {n}"
-            return ParseResult(sql, "rule")
+        if dim:
+            metric = next((c for w in re.findall(r"\w+", rest) if (c := _resolve_metric(w))), None)
+            use_avg = bool(re.search(r"\b(average|avg|mean)\b", rest))
+            if metric:
+                expr, alias = f"{'AVG' if use_avg else 'SUM'}({metric})", f"{'avg' if use_avg else 'total'}_{metric}"
+            elif re.search(r"\b(number|count|records?|transactions?|sales)\b", rest):
+                expr, alias = "COUNT(*)", "count"
+            else:
+                expr = alias = None
+            if expr:
+                where = _extract_filters(t)
+                sql = f"SELECT {dim}, {expr} AS {alias} FROM {TABLE}"
+                if where:
+                    sql += f" WHERE {where}"
+                sql += f" GROUP BY {dim} ORDER BY {alias} DESC LIMIT {n}"
+                return ParseResult(sql, "rule")
 
     # "top N ... by <column>" -> row-level top-N
     m = re.search(r"top\s+(\d+).*?by\s+(\w+)", t)
@@ -257,6 +312,8 @@ def rule_based_parse(text: str) -> ParseResult | None:
     # mis-matched by the plain scalar "average of <col>" pattern further
     # down, ignoring "highest" and "by brand" entirely.
     direction = _resolve_superlative_direction(t)
+    if direction and re.search(r"\b\d+\b", t):
+        return None  # "the 3 cheapest ..." / "5 brands with the lowest ..." is a ranked list, not one row
     if direction:
         dim = _resolve_superlative_dimension(t)
         metric = _resolve_superlative_metric(t)
@@ -307,6 +364,8 @@ def rule_based_parse(text: str) -> ParseResult | None:
 
     # "how many / count ..." [in each <dim> | by <dim>] [filters]
     if re.search(r"\bhow many\b|\bcount\b", t):
+        if re.search(r"\b(units?|quantity|qty)\b", t):
+            return None  # "how many units ..." means SUM(quantity_sold), not a row count
         m = re.search(r"(?:in each|group(?:ed)? by|per|by)\s+(\w+)", t)
         group_col = _resolve_dimension(m.group(1)) if m else None
         where = _extract_filters(t)
@@ -440,9 +499,10 @@ _MULTI_TABLE_RULES = (
     "a WHERE condition linking the tables.\n"
     "4. Use INNER JOIN by default; use LEFT JOIN only when the question asks "
     "to keep rows that have no match.\n"
-    "5. If the question asks to merge/combine/stack/append tables with the "
-    "same columns, use UNION ALL. If it asks to merge/combine tables on a "
-    "key, use a JOIN.\n"
+    "5. Use only the tables the question needs: a table named in the question "
+    "(\"orders\") means that table alone — not an archive or copy of it. Use "
+    "UNION ALL only if the question asks to merge/combine/stack tables or "
+    "clearly refers to all of them; use a JOIN to merge on a key.\n"
     "6. Joining a one-to-many relationship repeats the \"one\" side's rows — "
     "aggregate the measure from the correct table, and use COUNT(DISTINCT ...) "
     "when counting entities on the \"one\" side.\n"

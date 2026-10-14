@@ -71,12 +71,15 @@ def build(path: str) -> str:
     def ok(system: str, qid: str, key: str = "lenient") -> bool:
         return bool(results[qid][system][key])
 
+    is_multi = lambda i: questions[i]["dataset"] == "multi"  # noqa: E731
+    is_hinglish = lambda i: questions[i]["category"] == "hinglish"  # noqa: E731
     subsets = {
         "All questions": ids,
-        "Sales (English)": [i for i in ids if i.startswith("S")],
-        "Sales (Hinglish)": [i for i in ids if i.startswith("H")],
-        "Multi-table (uploaded files)": [i for i in ids if i.startswith("M")],
+        "Sales (English)": [i for i in ids if not is_multi(i) and not is_hinglish(i)],
+        "Sales (Hinglish)": [i for i in ids if is_hinglish(i)],
+        "Multi-table (uploaded files)": [i for i in ids if is_multi(i)],
     }
+    subsets = {name: sub for name, sub in subsets.items() if sub}
     out = [f"# Evaluation results — {Path(path).stem}", "",
            f"Model: `{data['model']}` · {len(ids)} questions · gold SQL executed on the same database.", ""]
 
@@ -94,7 +97,7 @@ def build(path: str) -> str:
                    f"{pct(sum(results[i][s]['valid'] for i in ids), n)} | {pct(sum(results[i][s]['sql'] is None for i in ids), n)} |")
 
     # ---- 2. the rule engine ---------------------------------------------------------------------------
-    applicable = [i for i in ids if not i.startswith("M")]
+    applicable = [i for i in ids if not is_multi(i)]
     answered = [i for i in applicable if results[i]["rule"]["sql"] is not None] if "rule" in systems else []
     if answered:
         right = [i for i in answered if ok("rule", i)]

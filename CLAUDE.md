@@ -92,6 +92,16 @@ mermaid-py / raw Mermaid syntax for charts.
 - **Hindi/Hinglish voice**: Whisper's own translate task garbles Hindi, so the
   pipeline is transcribe-in-language, then `nl2sql.translate_question` (LLM + schema).
   Don't switch back to `task="translate"`.
+- **Rule-engine safeguard** (`nl2sql._unexplained_words`): a rule match only
+  counts if every word of the question is one the patterns account for;
+  otherwise `rule_based_parse` abstains and the LLM answers. Without it the
+  rules answered 82% of sales questions but only 52% correctly (see
+  `eval/RESULTS.md`) — they matched a keyword and silently dropped "per", "2024",
+  "i7"... Don't loosen the vocabulary to raise coverage without re-running the
+  benchmark (`eval/README.md`); precision is the point.
+- Multi-table prompt: stacking tables with UNION ALL is opt-in (the hint and
+  rule 5). An earlier hint ("can be stacked") made the model union
+  `orders_archive` into every question about `orders`.
 - **DELETE safety**: never make a recognized delete/remove utterance execute
   without a confirmation step (CLI: prints affected rows, requires typed
   `yes`; API: returns a preview + `requires_confirmation: true` unless the

@@ -140,7 +140,10 @@ def get_join_hints(tables: list[str]) -> str:
             lines.append(f"- `{r['from_table']}.{r['from_col']}` likely references `{r['to_table']}.{r['to_col']}`")
         else:
             a, b = r["tables"]
-            lines.append(f"- `{a}` and `{b}` have identical columns (can be stacked with UNION ALL)")
+            lines.append(
+                f"- `{a}` and `{b}` have identical columns, so they *could* be stacked with UNION ALL — "
+                "but only if the question asks to combine them or refers to both; otherwise use just the table it names"
+            )
     return "\n".join(lines)
 
 
